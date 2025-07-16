@@ -1,0 +1,207 @@
+import {usePOSStore} from "~/pos/pos-store";
+import {formatNumber} from "../../utils/formats";
+
+const CartContent = () => {
+    const {
+        cart,
+        client,
+        updatePrice,
+        removeFromCart,
+        updateQuantity,
+        updateReduction,
+        checkout
+    } = usePOSStore();
+    
+    const handleQuantityChange = (productId: string, value: string) => {
+        const newQuantity = parseInt(value);
+        if (!isNaN(newQuantity) && newQuantity > 0) {
+            updateQuantity(productId, newQuantity);
+        }
+    };
+
+    const handleReductionChange = (productId: string, value: string, type: 'percentage' | 'fixed') => {
+        const reduction = parseFloat(value);
+        if (!isNaN(reduction)) {
+            if (type === 'percentage') {
+                // Ensure percentage reduction is between 0 and 100
+                const validReduction = Math.min(Math.max(0, reduction), 100);
+                updateReduction(productId, validReduction, type);
+            } else { // fixed type
+                // For fixed type, ensure it's not negative
+                const validReduction = Math.max(0, reduction);
+                // Get the item's unit price to ensure reduction doesn't exceed it
+                const item = cart.find(item => item.product.id === productId);
+                if (item) {
+                    const maxReduction = item.unit_price * item.quantity;
+                    updateReduction(productId, Math.min(validReduction, maxReduction), type);
+                }
+            }
+        } else {
+            updateReduction(productId, 0, type);
+        }
+    };
+
+
+    const handlePriceChange = (productId: string, value: string) => {
+        const newPrice = parseInt(value);
+        if (!isNaN(newPrice) && newPrice >= 0){
+            updatePrice(productId, newPrice);
+        }else{
+            updatePrice(productId, 0);
+        }
+    }
+
+    // Calculate total
+    const cartTotal = cart.reduce((total, item) => total + item.finalPrice, 0);
+    
+    // Handle checkout
+    const handleCheckout = () => {
+        if (cart.length === 0) {
+            alert("Le panier est vide");
+            return;
+        }
+        
+        if (!client) {
+            alert("Veuillez sélectionner un client");
+            return;
+        }
+        
+        checkout();
+    };
+
+    return (
+        <div>
+            <div className="flex bg-primary p-3">
+               <div className="w-4/12">
+                   <h5 className="font-medium text-white">
+                       Produit
+                   </h5>
+               </div>
+                <div className="w-2/12">
+                    <h5 className="font-medium text-white">
+                        Quantité
+                    </h5>
+                </div>
+                <div className="w-2/12">
+                    <h5 className="font-medium text-white">
+                        Prix
+                    </h5>
+                </div>
+                <div className="w-2/12">
+                    <h5 className="font-medium text-white">
+                        Réduction
+                    </h5>
+                </div>
+                <div className="w-2/12">
+                    <h5 className="font-medium text-white text-end">
+                        Total
+                    </h5>
+                </div>
+            </div>
+            {
+                cart.length>0 ? cart.map((item) => (
+                    <div className="flex  p-3" key={item.product.reference}>
+                        <div className="w-4/12 flex items-center gap-2">
+                            <img src={item.product.image} className="w-10 h-10 object-cover rounded" alt={item.product.designation}/>
+                            <div className="">
+                                <h5 className="font-medium text-primary ">
+                                    {item.product.designation}
+                                </h5>
+                                <p className="text-gray-400 m-0 text-xs" >{item.product.reference}</p>
+                            </div>
+                        </div>
+                        <div className="w-2/12 flex items-center gap-2">
+                            <div className="flex items-center gap-1">
+                                {item.quantity === 1 ? (
+                                    <button className="border border-red-300 rounded-full text-red-500 text-center w-8 h-8"
+                                            onClick={()=>removeFromCart(item.product.id)}>-</button>
+                                ):(
+                                    <button className="border border-gray-200 rounded-full text-center w-8 h-8 cursor-pointer"
+                                            onClick={()=>updateQuantity(item.product.id, item.quantity-1)}>-</button>
+                                )}
+                                <input
+                                    type="number"
+                                    min="1"
+                                    value={item.quantity}
+                                    onChange={(e) => handleQuantityChange(item.product.id, e.target.value)}
+                                    className="w-16 text-center outline-none rounded-md"
+                                />
+                                <button className="bg-primary rounded-full text-white text-center w-8 h-8 cursor-pointer"
+                                        onClick={() => updateQuantity(item.product.id, item.quantity + 1)}>+</button>
+                            </div>
+                        </div>
+                        <div className="w-2/12 flex items-center">
+                            <input
+                                type="number"
+                                min="1"
+                                value={item.unit_price}
+                                onChange={(e) => handlePriceChange(item.product.id, e.target.value)}
+                                className="w-full  outline-none rounded-md"
+                            />
+                        </div>
+                        <div className="w-2/12 flex items-center">
+                            <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={item.reduction || ''}
+                                onChange={(e) => handleReductionChange(
+                                    item.product.id,
+                                    e.target.value,
+                                    item.reductionType || 'fixed'
+                                )}
+                                className="w-full  outline-none rounded-md text-sm"
+                                placeholder="0.00"
+                            />
+                        </div>
+                        <div className="w-2/12 flex items-center justify-end">
+                            <h5 className="font-medium text-primary ">
+                                {formatNumber(item.finalPrice,true)}
+                            </h5>
+                        </div>
+                    </div>
+                )):
+                    (
+                        <div className="w-full p-3" >
+                            <h5 className="text-center text-gray-400">
+                                Aucun produit dans le panier
+                            </h5>
+                        </div>
+                    )
+            }
+            
+            {cart.length > 0 && (
+                <div className="p-4 border-t">
+                    <div className="flex justify-between items-center mb-4">
+                        <span className="font-medium text-gray-700">Total:</span>
+                        <span className="font-bold text-xl text-primary">{formatNumber(cartTotal, true)}</span>
+                    </div>
+                    
+                    <button 
+                        onClick={handleCheckout}
+                        disabled={!client || cart.length === 0}
+                        className={`w-full py-3 px-4 rounded-md text-white font-medium ${
+                            !client || cart.length === 0 
+                            ? 'bg-gray-400 cursor-not-allowed' 
+                            : 'bg-primary hover:bg-primary-dark'
+                        }`}
+                    >
+                        {!client 
+                            ? "Sélectionnez un client pour continuer" 
+                            : cart.length === 0 
+                                ? "Ajoutez des produits au panier" 
+                                : "Procéder au paiement"}
+                    </button>
+                    
+                    {!client && (
+                        <p className="text-sm text-red-500 mt-2">
+                            Vous devez sélectionner un client avant de procéder au paiement
+                        </p>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+};
+
+export default CartContent;
