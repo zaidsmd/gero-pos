@@ -37,7 +37,7 @@ const QuickAddClientModal: React.FC<QuickAddClientModalProps> = ({
     try {
       // API call to create a new client
       const response = await axios.post<Client>(
-        'http://classic.gero.test/api/v-classic/clients',
+        'http://wwsl.gero.test/api/v-classic/clients',
         {
           nom: data.denomination,
           telephone: data.telephone,

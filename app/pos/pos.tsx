@@ -59,10 +59,10 @@ export function POS() {
       )}
 
       <div className="flex-1 flex flex-col md:flex-row gap-6 overflow-hidden pb-3">
-        <div className="w-full md:w-2/3 bg-white rounded-lg shadow-sm">
+        <div className="w-full md:w-2/3 bg-white rounded-lg shadow-sm flex">
           <CartLayout/>
         </div>
-        <div className="w-full md:w-1/3 overflow-auto bg-white rounded-lg shadow-sm p-4">
+        <div className="w-full md:w-1/3 overflow-auto bg-white rounded-lg shadow-sm p-4 ">
           <Articles/>
         </div>
 

@@ -4,7 +4,7 @@ import ClientSelect from "../client-select";
 
 const CartLayout = () => {
     return (
-        <div className="rounded-lg">
+        <div className="rounded-lg flex flex-col w-full">
             <div className="flex p-4">
                 <div className="w-1/2">
                     <ClientSelect />

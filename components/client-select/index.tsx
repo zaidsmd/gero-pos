@@ -49,9 +49,9 @@ const ClientSelect: React.FC = () => {
 
             try {
                 setLoading(true);
-                const response = await axios.get<Client[]>(`http://classic.gero.test/api/v-classic/clients-liste?search=${encodeURIComponent(search)}`,{
+                const response = await axios.get<Client[]>(`http://wwsl.gero.test/api/v-classic/clients-liste?search=${encodeURIComponent(search)}`,{
                     headers:{
-                        'Authorization': 'Bearer 7|wPQwGop9W0oDH1LRiw2QYb4dooXIgavMDnOGvPEI432172e0',
+                        'Authorization': 'Bearer 73|BN3psKqCvGLuaaiBDzc41QLWFCjaPoqTnqtFtHdr804977d1',
                     }
                 });
                 setClients(response.data);
@@ -119,7 +119,7 @@ const ClientSelect: React.FC = () => {
                     <input
                         type="text"
                         className="w-full py-2 px-3 outline-none bg-white rounded-md"
-                        placeholder="Search clients..."
+                        placeholder="Rechercher un client..."
                         value={searchTerm}
                         onChange={handleSearch}
                         onFocus={handleFocus}

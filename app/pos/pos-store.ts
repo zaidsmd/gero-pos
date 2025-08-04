@@ -106,9 +106,9 @@ export const usePOSStore = create<POSState>((set, get) => ({
     fetchProducts: async () => {
         await handleAsyncOperation(async () => {
             // Simulate API call
-            const response = await axios.get('http://classic.gero.test/api/v-classic/articles-all', {
+            const response = await axios.get('http://wwsl.gero.test/api/v-classic/articles-all', {
                 headers: {
-                    'Authorization': 'Bearer 7|wPQwGop9W0oDH1LRiw2QYb4dooXIgavMDnOGvPEI432172e0',
+                    'Authorization': 'Bearer 73|BN3psKqCvGLuaaiBDzc41QLWFCjaPoqTnqtFtHdr804977d1',
                 }
             });
             set({products: response.data.data, isLoading: false});
