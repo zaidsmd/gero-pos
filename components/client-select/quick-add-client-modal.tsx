@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import axios from 'axios';
 import { type Client, usePOSStore } from '~/pos/pos-store';
+import {endpoints} from "../../services/api";
 
 interface QuickAddClientFormData {
   denomination: string;
@@ -36,19 +37,11 @@ const QuickAddClientModal: React.FC<QuickAddClientModalProps> = ({
     
     try {
       // API call to create a new client
-      const response = await axios.post<Client>(
-        'http://wwsl.gero.test/api/v-classic/clients',
-        {
-          nom: data.denomination,
-          telephone: data.telephone,
-          ville: data.ville
-        },
-        {
-          headers: {
-            'Authorization': 'Bearer 7|wPQwGop9W0oDH1LRiw2QYb4dooXIgavMDnOGvPEI432172e0',
-            'Content-Type': 'application/json'
-          }
-        }
+      const response = await endpoints.clients.create( {
+        nom: data.denomination,
+        telephone: data.telephone,
+        ville: data.ville
+      }
       );
       
       // Call the callback with the newly created client
@@ -69,7 +62,7 @@ const QuickAddClientModal: React.FC<QuickAddClientModalProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn"
+      className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center z-50 animate-fadeIn"
       onClick={onClose}
     >
       <div 

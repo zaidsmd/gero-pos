@@ -5,6 +5,7 @@ import axios from 'axios';
 import { debounce } from 'lodash';
 import {type Client, usePOSStore} from '~/pos/pos-store';
 import QuickAddClientModal from './quick-add-client-modal';
+import {endpoints} from "../../services/api";
 
 const ClientSelect: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState<string>('');
@@ -49,11 +50,7 @@ const ClientSelect: React.FC = () => {
 
             try {
                 setLoading(true);
-                const response = await axios.get<Client[]>(`http://wwsl.gero.test/api/v-classic/clients-liste?search=${encodeURIComponent(search)}`,{
-                    headers:{
-                        'Authorization': 'Bearer 73|BN3psKqCvGLuaaiBDzc41QLWFCjaPoqTnqtFtHdr804977d1',
-                    }
-                });
+                const response = await endpoints.clients.getAll(search);
                 setClients(response.data);
                 setIsOpen(true);
             } catch (error) {

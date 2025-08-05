@@ -1,5 +1,7 @@
 import {create} from 'zustand';
-import axios from "axios";
+import {api, endpoints} from '../../services/api';
+import type {AxiosResponse} from "axios";
+import type {PaymentData} from "../../components/cart/payment-modal";
 
 // Define the types for our store
 export interface Product {
@@ -9,7 +11,7 @@ export interface Product {
     quantity: number;
     reference: string;
     image?: string;
-    tva: number;
+    tax: number;
     unit: string;
 }
 
@@ -42,31 +44,42 @@ interface POSState {
     updatePrice: (productId: string, price: number) => void;
     updateReduction: (productId: string, reduction: number, reductionType: 'percentage' | 'fixed') => void;
     clearCart: () => void;
-    checkout: () => Promise<void>;
+    checkout: (payment?:PaymentData) => Promise<AxiosResponse<{
+        message: string;
+        template: string;
+    }, any>>;
     setClient: (client: Client) => void;
     clearClient: () => void;
 }
 
-// Helper functions to reduce code duplication
 const calculateFinalPrice = (
     unitPrice: number, 
     quantity: number, 
     reduction?: number, 
-    reductionType?: 'percentage' | 'fixed'
+    reductionType?: 'percentage' | 'fixed',
+    tax?: number
 ): number => {
     if (reduction === undefined || reductionType === undefined) {
-        return unitPrice * quantity;
+        const basePrice = unitPrice * quantity;
+        return tax ? basePrice * (1 + tax / 100) : basePrice;
     }
 
     const basePrice = unitPrice * quantity;
     let finalPrice: number;
-    
+
     if (reductionType === 'percentage') {
         finalPrice = basePrice * (1 - reduction / 100);
-    } else { // fixed
-        finalPrice = basePrice - reduction;
+        if (tax) {
+            finalPrice = finalPrice * (1 + tax / 100);
+        }
+    } else {
+        if (tax) {
+            finalPrice = (basePrice * (1 + tax / 100)) - reduction;
+        } else {
+            finalPrice = basePrice - reduction;
+        }
     }
-    
+
     return Math.max(0, finalPrice); // Ensure price doesn't go negative
 };
 
@@ -81,16 +94,18 @@ const updateCartItem = (
 };
 
 // Helper for handling async operations
-const handleAsyncOperation = async (
-    operation: () => Promise<void>,
+const handleAsyncOperation = async <T>(
+    operation: () => Promise<T>,
     set: (state: Partial<POSState>) => void,
     errorMessage: string
-) => {
+): Promise<T> => {
     set({isLoading: true, error: null});
     try {
-        await operation();
+        const result = await operation();
+        return result;
     } catch (error) {
         set({error: errorMessage, isLoading: false});
+        throw error;
     }
 };
 
@@ -102,15 +117,9 @@ export const usePOSStore = create<POSState>((set, get) => ({
     isLoading: false,
     error: null,
 
-    // Mock data for demonstration
     fetchProducts: async () => {
         await handleAsyncOperation(async () => {
-            // Simulate API call
-            const response = await axios.get('http://wwsl.gero.test/api/v-classic/articles-all', {
-                headers: {
-                    'Authorization': 'Bearer 73|BN3psKqCvGLuaaiBDzc41QLWFCjaPoqTnqtFtHdr804977d1',
-                }
-            });
+            const response = await endpoints.products.getAll();
             set({products: response.data.data, isLoading: false});
         }, set, 'Failed to fetch products');
     },
@@ -118,7 +127,7 @@ export const usePOSStore = create<POSState>((set, get) => ({
     addToCart: (product: Product) => {
         const {cart} = get();
         const existingItem = cart.find(item => item.product.id === product.id);
-        
+
         if (existingItem) {
             // Calculate with the new quantity (current + 1)
             const newQuantity = existingItem.quantity + 1;
@@ -126,22 +135,31 @@ export const usePOSStore = create<POSState>((set, get) => ({
                 existingItem.unit_price, 
                 newQuantity, 
                 existingItem.reduction, 
-                existingItem.reductionType
+                existingItem.reductionType,
+                existingItem.product.tax
             );
-            
+
             const updatedCart = updateCartItem(cart, product.id, item => ({
                 ...item, 
                 quantity: newQuantity, 
                 finalPrice
             }));
-            
+
             set({cart: updatedCart});
         } else {
+            const finalPrice = calculateFinalPrice(
+                product.prix,
+                1,
+                undefined,
+                undefined,
+                product.tax
+            );
+
             set({cart: [...cart, {
                 product, 
                 quantity: 1, 
                 unit_price: product.prix, 
-                finalPrice: product.prix
+                finalPrice: finalPrice
             }]});
         }
     },
@@ -154,36 +172,38 @@ export const usePOSStore = create<POSState>((set, get) => ({
     updateQuantity: (productId: string, quantity: number) => {
         const {cart} = get();
         const safeQuantity = Math.max(1, quantity);
-        
+
         const updatedCart = updateCartItem(cart, productId, item => {
             const finalPrice = calculateFinalPrice(
                 item.unit_price,
                 safeQuantity,
                 item.reduction,
-                item.reductionType
+                item.reductionType,
+                item.product.tax
             );
-            
+
             return {
                 ...item,
                 quantity: safeQuantity,
                 finalPrice
             };
         });
-        
+
         set({cart: updatedCart});
     },
 
     updateReduction: (productId: string, reduction: number, reductionType: 'percentage' | 'fixed') => {
         const {cart} = get();
-        
+
         const updatedCart = updateCartItem(cart, productId, item => {
             const finalPrice = calculateFinalPrice(
                 item.unit_price,
                 item.quantity,
                 reduction,
-                reductionType
+                reductionType,
+                item.product.tax
             );
-            
+
             return {
                 ...item,
                 reduction,
@@ -191,29 +211,30 @@ export const usePOSStore = create<POSState>((set, get) => ({
                 finalPrice
             };
         });
-        
+
         set({cart: updatedCart});
     },
 
     updatePrice: (productId: string, price: number) => {
         const {cart} = get();
         const safePrice = Math.max(0, price);
-        
+
         const updatedCart = updateCartItem(cart, productId, item => {
             const finalPrice = calculateFinalPrice(
                 safePrice,
                 item.quantity,
                 item.reduction,
-                item.reductionType
+                item.reductionType,
+                item.product.tax
             );
-            
+
             return {
                 ...item,
                 unit_price: safePrice,
                 finalPrice
             };
         });
-        
+
         set({cart: updatedCart});
     },
 
@@ -221,42 +242,52 @@ export const usePOSStore = create<POSState>((set, get) => ({
         set({cart: []});
     },
 
-    checkout: async () => {
-        await handleAsyncOperation(async () => {
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            // In a real app, you would send the cart and client data to your backend
+    checkout: async (paymentData?: PaymentData) => {
+          return  await handleAsyncOperation(async () => {
             const { cart, client } = get();
-            
+
             if (!client) {
                 throw new Error("Client is required for checkout");
             }
-            
-            console.log("Processing checkout for client:", client.nom, "with", cart.length, "items");
-            // In a real implementation, you would call your API:
-            // await api.checkout({ cart, client });
-            
-            // For demonstration purposes, log the checkout data
-            console.log("Checkout data:", {
-                client: client,
-                items: cart.map(item => ({
-                    product: item.product.designation,
-                    quantity: item.quantity,
-                    unitPrice: item.unit_price,
-                    reduction: item.reduction,
-                    reductionType: item.reductionType,
-                    finalPrice: item.finalPrice
-                })),
-                total: cart.reduce((sum, item) => sum + item.finalPrice, 0)
-            });
 
-            // Clear cart and client after successful checkout
-            set({cart: [], client: null, isLoading: false});
-            
-            alert(`Commande traitée avec succès pour le client: ${client.nom}`);
-            
-            // and handle payment processing, inventory updates, etc.
+            // Prepare order data
+            const orderData: any = {
+                type:'bc',
+                client: client.id,
+                lignes : cart.map(item => ({
+                    id: item.product.id,
+                    name: item.product.designation,
+                    quantity: item.quantity,
+                    prix: item.unit_price,
+                    reduction: item.reduction || 0,
+                    reduction_type: item.reductionType || 'fixed',
+                    final_price: item.finalPrice
+                })),
+                exercice: 2025,
+                session_id:"1",
+            };
+
+            // Add payment data if provided
+            if (paymentData) {
+                orderData.paiement = {
+                    i_montant: paymentData.amount,
+                    i_compte_id: paymentData.accountId,
+                    i_method_key: paymentData.paymentMethodId,
+                    i_note: paymentData.note,
+                    i_reference:paymentData.checkReference ?? null,
+                    i_date:paymentData.expectedDate ?? null,
+                };
+            }
+
+            try {
+                const response:AxiosResponse<{message:string,template:string}> = await endpoints.orders.create(orderData);
+                set({cart: [], isLoading: false});
+
+                return response;
+            } catch (error) {
+                console.error('Checkout error:', error);
+                throw error; // Re-throw to be caught by handleAsyncOperation
+            }
         }, set, 'Checkout failed');
     },
 
