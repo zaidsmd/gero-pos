@@ -5,6 +5,7 @@ import axios from 'axios';
 import Articles from "../../components/articles/articles";
 import CartLayout from "../../components/cart/cart-layout";
 import TypeToggler from "~/pos/type-toggler";
+import { DepenseButton } from "../../components/depense";
 
 // Define the form data type for checkout
 interface CheckoutFormData {
@@ -42,11 +43,13 @@ export function POS() {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-semibold text-[#3b5461]">Point of Sale</h1>
-
         </div>
-        <a href="/" className="px-4 py-2 bg-[#3b5461] text-white rounded-md hover:bg-[#2a3e48] transition-colors">
-          Back
-        </a>
+        <div className="flex space-x-3">
+          <DepenseButton />
+          <a href="/" className="px-4 py-2 bg-[#3b5461] text-white rounded-md hover:bg-[#2a3e48] transition-colors">
+            Back
+          </a>
+        </div>
       </div>
       <div className="flex-1 flex flex-col md:flex-row gap-6 overflow-hidden pb-3">
         <div className="w-full md:w-2/3 bg-white rounded-lg shadow-sm flex">

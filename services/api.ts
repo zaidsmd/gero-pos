@@ -109,6 +109,12 @@ const endpoints = {
     addPayment: (data: any) => api.post('/ventes-ajouter-paiement', data),
   },
 
+  // Depenses
+  depenses: {
+    getCategories: () => api.get('/depense-categories'),
+    create: (data: any) => api.post('/depense', data),
+  },
+
   // Authentication
   auth: {
     login: (credentials: { email: string; password: string }) =>
