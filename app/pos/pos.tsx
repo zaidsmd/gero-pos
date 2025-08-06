@@ -42,11 +42,7 @@ export function POS() {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-semibold text-[#3b5461]">Point of Sale</h1>
-          {client && (
-            <div className="text-sm text-gray-600 mt-1">
-              Client: <span className="font-medium">{client.nom}</span>
-            </div>
-          )}
+
         </div>
         <a href="/" className="px-4 py-2 bg-[#3b5461] text-white rounded-md hover:bg-[#2a3e48] transition-colors">
           Back
@@ -57,11 +53,11 @@ export function POS() {
           <CartLayout/>
         </div>
 
-        <div className="w-full md:w-1/3 overflow-hidden flex flex-col gap-4 ">
-          <div className="bg-white rounded-lg shadow-sm p-4 ">
+        <div className="w-full md:w-1/3 overflow-hidden flex flex-col   gap-4 ">
+          <div className="bg-white rounded-lg shadow-sm p-4 w-full flex-none max-h-fit ">
             <TypeToggler/>
           </div>
-          <div className="bg-white rounded-lg shadow-sm p-4 flex flex-col overflow-hidden">
+          <div className="bg-white rounded-lg shadow-sm p-4 w-full flex-grow  flex flex-col overflow-hidden">
             <Articles/>
           </div>
         </div>
