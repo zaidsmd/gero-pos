@@ -2,11 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { endpoints } from '../../services/api';
 import { usePOSStore } from '../../app/pos/pos-store';
 import { formatNumber } from '../../utils/formats';
+import { useForm, type SubmitHandler } from 'react-hook-form';
+
+// Helper function to round monetary values to 2 decimal places (0.01)
+const roundToTwoDecimals = (value: number): number => {
+    return Math.round((value + Number.EPSILON) * 100) / 100;
+};
 
 interface PaymentModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSubmit: (paymentData: PaymentData) => void;
+    serverErrors?: Record<string, string> | null;
+    isAdditionalPayment?: boolean;
+    remainingAmount?: number;
 }
 
 interface Account {
@@ -26,33 +35,85 @@ export interface PaymentData {
     note: string;
     expectedDate?: string;
     checkReference?: string;
+    credit?: boolean;
 }
 
-const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onSubmit }) => {
-    const [amount, setAmount] = useState<string>('');
-    const [accountId, setAccountId] = useState<string | number>('');
-    const [paymentMethodId, setPaymentMethodId] = useState<string | number>('');
-    const [note, setNote] = useState<string>('');
-    const [expectedDate, setExpectedDate] = useState<string>('');
-    const [checkReference, setCheckReference] = useState<string>('');
+const PaymentModal: React.FC<PaymentModalProps> = ({ 
+    isOpen, 
+    onClose, 
+    onSubmit, 
+    serverErrors, 
+    isAdditionalPayment = false,
+    remainingAmount
+}) => {
     const [accounts, setAccounts] = useState<Account[]>([]);
     const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
-    const [error, setError] = useState<string | null>(null);
+    const [generalError, setGeneralError] = useState<string | null>(null);
 
-    const { cart } = usePOSStore();
-    const cartTotal = cart.reduce((total, item) => total + item.finalPrice, 0);
+    const { cartTotal: storeCartTotal } = usePOSStore();
+    const cartTotal = isAdditionalPayment && remainingAmount !== undefined 
+        ? remainingAmount 
+        : storeCartTotal;
+    
+    const { 
+        register, 
+        handleSubmit, 
+        formState: { errors }, 
+        setValue, 
+        watch, 
+        reset,
+        setError
+    } = useForm<PaymentData>({
+        defaultValues: {
+            amount: cartTotal,
+            accountId: '',
+            paymentMethodId: '',
+            note: '',
+            expectedDate: '',
+            checkReference: ''
+        }
+    });
+    
+    const paymentMethodId = watch('paymentMethodId');
 
     useEffect(() => {
         if (isOpen) {
-            setAmount(cartTotal.toString());
+            // Set default amount based on whether it's an additional payment or regular payment
+            setValue('amount', cartTotal);
             fetchData();
+            
+            // Reset errors when modal opens
+            setGeneralError(null);
         }
-    }, [isOpen, cartTotal]);
+    }, [isOpen, cartTotal, setValue, isAdditionalPayment]);
+    
+    // Apply server errors if provided
+    useEffect(() => {
+        if (serverErrors && Object.keys(serverErrors).length > 0) {
+            Object.entries(serverErrors).forEach(([field, message]) => {
+                // Map server error fields to form fields
+                const fieldMap: Record<string, string> = {
+                    "paiement.i_date": "expectedDate",
+                    "paiement.i_montant": "amount",
+                    "paiement.i_method_key": "paymentMethodId",
+                    "paiement.i_compte_id": "accountId",
+                    "paiement.i_reference": "checkReference",
+                    "paiement.i_note": "note",
+                };
+                
+                const formField = fieldMap[field] || field;
+                setError(formField as any, { 
+                    type: 'server', 
+                    message: Array.isArray(message) ? message[0] : message 
+                });
+            });
+        }
+    }, [serverErrors, setError]);
 
     const fetchData = async () => {
         setLoading(true);
-        setError(null);
+        setGeneralError(null);
         try {
             const [accountsResponse, paymentMethodsResponse] = await Promise.all([
                 endpoints.payment.getAccounts(),
@@ -62,86 +123,45 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onSubmit }
             setPaymentMethods(paymentMethodsResponse.data);
         } catch (err) {
             console.error('Error fetching payment data:', err);
-            setError('Erreur lors du chargement des données de paiement');
+            setGeneralError('Erreur lors du chargement des données de paiement');
         } finally {
             setLoading(false);
         }
     };
 
-    const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
-        // Allow only numbers and decimal point
-        if (/^\d*\.?\d*$/.test(value)) {
-            setAmount(value);
-        }
-    };
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-
-        const amountValue = parseFloat(amount);
-
-        // Validation
-        if (isNaN(amountValue) || amountValue <= 0) {
-            setError('Le montant doit être supérieur à 0');
+    const onFormSubmit: SubmitHandler<PaymentData> = (data) => {
+        // Round the amount to 2 decimal places
+        data.amount = roundToTwoDecimals(data.amount);
+        
+        // Validation for amount
+        if (data.amount > cartTotal) {
+            setError('amount', { 
+                type: 'manual', 
+                message: isAdditionalPayment 
+                    ? 'Le montant ne peut pas être supérieur au montant restant à payer' 
+                    : 'Le montant ne peut pas être supérieur au total du panier' 
+            });
             return;
         }
-
-        if (amountValue > cartTotal) {
-            setError('Le montant ne peut pas être supérieur au total du panier');
-            return;
-        }
-
-        if (!accountId) {
-            setError('Veuillez sélectionner un compte');
-            return;
-        }
-
-        if (!paymentMethodId) {
-            setError('Veuillez sélectionner une méthode de paiement');
-            return;
-        }
-
-        // Validate additional fields for lcn or cheque payment methods
-        if (requiresAdditionalFields(paymentMethodId)) {
-            if (!expectedDate) {
-                setError('Veuillez sélectionner une date prévue');
-                return;
-            }
-            if (!checkReference) {
-                setError('Veuillez entrer une référence de chèque');
-                return;
-            }
-        }
-
+        
         // Submit payment data
-        onSubmit({
-            amount: amountValue,
-            accountId,
-            paymentMethodId,
-            note,
-            ...(requiresAdditionalFields(paymentMethodId) && {
-                expectedDate,
-                checkReference
-            })
-        });
-
-        // Reset form
-        resetForm();
+        onSubmit(data);
     };
-
-    const resetForm = () => {
-        setAmount('');
-        setAccountId('');
-        setPaymentMethodId('');
-        setNote('');
-        setExpectedDate('');
-        setCheckReference('');
-        setError(null);
+    
+    const resetFormData = () => {
+        reset({
+            amount: cartTotal,
+            accountId: '',
+            paymentMethodId: '',
+            note: '',
+            expectedDate: '',
+            checkReference: ''
+        });
+        setGeneralError(null);
     };
 
     const requiresAdditionalFields = (methodId: string | number): boolean => {
-        return methodId === 'lcn' || methodId === 'cheque';
+        return methodId === 'lcn' || methodId === 'cheque' || methodId === 'credit';
     };
 
     if (!isOpen) return null;
@@ -150,7 +170,16 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onSubmit }
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fadeIn">
             <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
                 <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-semibold text-gray-800">Paiement</h2>
+                    <div>
+                        <h2 className="text-xl font-semibold text-gray-800">
+                            {isAdditionalPayment ? "Paiement Supplémentaire" : "Paiement"}
+                        </h2>
+                        {isAdditionalPayment && remainingAmount !== undefined && (
+                            <p className="text-sm text-gray-600">
+                                Montant restant à payer: {formatNumber(remainingAmount, true)}
+                            </p>
+                        )}
+                    </div>
                     <button 
                         onClick={onClose}
                         className="text-gray-500 hover:text-gray-700"
@@ -161,9 +190,9 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onSubmit }
                     </button>
                 </div>
 
-                {error && (
+                {generalError && (
                     <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
-                        {error}
+                        {generalError}
                     </div>
                 )}
 
@@ -172,32 +201,42 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onSubmit }
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                     </div>
                 ) : (
-                    <form onSubmit={handleSubmit}>
+                    <form onSubmit={handleSubmit(onFormSubmit)}>
                         <div className="mb-4">
                             <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">
-                                Montant ({formatNumber(cartTotal, true)})
+                                {isAdditionalPayment 
+                                    ? `Montant à ajouter (max: ${formatNumber(cartTotal, true)})` 
+                                    : `Montant (${formatNumber(cartTotal, true)})`}
                             </label>
                             <input
-                                type="text"
                                 id="amount"
-                                value={amount}
-                                onChange={handleAmountChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                                type="text"
+                                {...register('amount', {
+                                    required: 'Le montant est requis',
+                                    validate: {
+                                        isNumber: value => !isNaN(Number(value)) || 'Le montant doit être un nombre',
+                                        isPositive: value => Number(value) > 0 || 'Le montant doit être supérieur à 0'
+                                    },
+                                    setValueAs: value => Number(value)
+                                })}
+                                className={`w-full px-3 py-2 border ${errors.amount ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-primary`}
                                 placeholder="0.00"
-                                required
                             />
+                            {errors.amount && (
+                                <p className="text-red-500 text-xs mt-1">{errors.amount.message}</p>
+                            )}
                         </div>
 
                         <div className="mb-4">
-                            <label htmlFor="account" className="block text-sm font-medium text-gray-700 mb-1">
+                            <label htmlFor="accountId" className="block text-sm font-medium text-gray-700 mb-1">
                                 Compte
                             </label>
                             <select
-                                id="account"
-                                value={accountId}
-                                onChange={(e) => setAccountId(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                                required
+                                id="accountId"
+                                {...register('accountId', { 
+                                    required: 'Veuillez sélectionner un compte' 
+                                })}
+                                className={`w-full px-3 py-2 border ${errors.accountId ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-primary`}
                             >
                                 <option value="">Sélectionnez un compte</option>
                                 {accounts.map((account) => (
@@ -206,18 +245,21 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onSubmit }
                                     </option>
                                 ))}
                             </select>
+                            {errors.accountId && (
+                                <p className="text-red-500 text-xs mt-1">{errors.accountId.message}</p>
+                            )}
                         </div>
 
                         <div className="mb-4">
-                            <label htmlFor="paymentMethod" className="block text-sm font-medium text-gray-700 mb-1">
+                            <label htmlFor="paymentMethodId" className="block text-sm font-medium text-gray-700 mb-1">
                                 Méthode de paiement
                             </label>
                             <select
-                                id="paymentMethod"
-                                value={paymentMethodId}
-                                onChange={(e) => setPaymentMethodId(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                                required
+                                id="paymentMethodId"
+                                {...register('paymentMethodId', { 
+                                    required: 'Veuillez sélectionner une méthode de paiement' 
+                                })}
+                                className={`w-full px-3 py-2 border ${errors.paymentMethodId ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-primary`}
                             >
                                 <option value="">Sélectionnez une méthode de paiement</option>
                                 {paymentMethods.map((method) => (
@@ -226,6 +268,9 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onSubmit }
                                     </option>
                                 ))}
                             </select>
+                            {errors.paymentMethodId && (
+                                <p className="text-red-500 text-xs mt-1">{errors.paymentMethodId.message}</p>
+                            )}
                         </div>
 
                         {requiresAdditionalFields(paymentMethodId) && (
@@ -237,11 +282,14 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onSubmit }
                                     <input
                                         type="date"
                                         id="expectedDate"
-                                        value={expectedDate}
-                                        onChange={(e) => setExpectedDate(e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                                        required
+                                        {...register('expectedDate', { 
+                                            required: requiresAdditionalFields(paymentMethodId) ? 'Veuillez sélectionner une date prévue' : false 
+                                        })}
+                                        className={`w-full px-3 py-2 border ${errors.expectedDate ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-primary`}
                                     />
+                                    {errors.expectedDate && (
+                                        <p className="text-red-500 text-xs mt-1">{errors.expectedDate.message}</p>
+                                    )}
                                 </div>
 
                                 <div className="mb-4">
@@ -251,12 +299,15 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onSubmit }
                                     <input
                                         type="text"
                                         id="checkReference"
-                                        value={checkReference}
-                                        onChange={(e) => setCheckReference(e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                                        {...register('checkReference', { 
+                                            required: requiresAdditionalFields(paymentMethodId) ? 'Veuillez entrer une référence de chèque' : false 
+                                        })}
+                                        className={`w-full px-3 py-2 border ${errors.checkReference ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-primary`}
                                         placeholder="Référence de chèque"
-                                        required
                                     />
+                                    {errors.checkReference && (
+                                        <p className="text-red-500 text-xs mt-1">{errors.checkReference.message}</p>
+                                    )}
                                 </div>
                             </>
                         )}
@@ -267,18 +318,23 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onSubmit }
                             </label>
                             <textarea
                                 id="note"
-                                value={note}
-                                onChange={(e) => setNote(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                                {...register('note')}
+                                className={`w-full px-3 py-2 border ${errors.note ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-primary`}
                                 rows={3}
                                 placeholder="Ajouter une note (optionnel)"
                             ></textarea>
+                            {errors.note && (
+                                <p className="text-red-500 text-xs mt-1">{errors.note.message}</p>
+                            )}
                         </div>
 
                         <div className="flex justify-end space-x-3">
                             <button
                                 type="button"
-                                onClick={onClose}
+                                onClick={() => {
+                                    resetFormData();
+                                    onClose();
+                                }}
                                 className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400"
                             >
                                 Annuler

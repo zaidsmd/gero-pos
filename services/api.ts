@@ -16,7 +16,7 @@ const api = axios.create({
 // Request interceptor for adding auth token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('auth_token') || '22|oV5aesFHk3SOOHo53XoLYFkmby0LLk7TFEKYYif32dda9afb';
+    const token = localStorage.getItem('auth_token') || '14|rV2bPP6WsVVEf1oVvQJF7O7iDygXhOMAQQNfFOkU3d67173e';
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -106,6 +106,7 @@ const endpoints = {
     create: (data: any) => api.post('/ventes', data),
     getById: (id: string) => api.get(`/orders/${id}`),
     getAll: () => api.get('/orders'),
+    addPayment: (data: any) => api.post('/ventes-ajouter-paiement', data),
   },
 
   // Authentication

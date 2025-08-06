@@ -51,13 +51,6 @@ export function POS() {
           Back
         </a>
       </div>
-
-      {error && (
-        <div className="bg-red-50 text-red-600 px-4 py-3 rounded-md mb-4" role="alert">
-          {error}
-        </div>
-      )}
-
       <div className="flex-1 flex flex-col md:flex-row gap-6 overflow-hidden pb-3">
         <div className="w-full md:w-2/3 bg-white rounded-lg shadow-sm flex">
           <CartLayout/>
