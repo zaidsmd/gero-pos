@@ -4,6 +4,7 @@ import { useForm, Controller } from 'react-hook-form';
 import axios from 'axios';
 import Articles from "../../components/articles/articles";
 import CartLayout from "../../components/cart/cart-layout";
+import TypeToggler from "~/pos/type-toggler";
 
 // Define the form data type for checkout
 interface CheckoutFormData {
@@ -55,8 +56,14 @@ export function POS() {
         <div className="w-full md:w-2/3 bg-white rounded-lg shadow-sm flex">
           <CartLayout/>
         </div>
-        <div className="w-full md:w-1/3 overflow-auto bg-white rounded-lg shadow-sm p-4 ">
-          <Articles/>
+
+        <div className="w-full md:w-1/3 overflow-hidden flex flex-col gap-4 ">
+          <div className="bg-white rounded-lg shadow-sm p-4 ">
+            <TypeToggler/>
+          </div>
+          <div className="bg-white rounded-lg shadow-sm p-4 flex flex-col overflow-hidden">
+            <Articles/>
+          </div>
         </div>
 
       </div>

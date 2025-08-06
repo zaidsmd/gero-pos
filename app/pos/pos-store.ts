@@ -40,6 +40,7 @@ interface POSState {
     lastOrderId: string | null;
     lastOrderTotal: number | null;
     lastOrderPaid: number | null;
+    orderType: 'vente' | 'retour'; // 'vente' for sale, 'retour' for return
 
     // Actions
     fetchProducts: () => Promise<void>;
@@ -49,6 +50,8 @@ interface POSState {
     updatePrice: (productId: string, price: number) => void;
     updateReduction: (productId: string, reduction: number, reductionType: 'percentage' | 'fixed') => void;
     clearCart: () => void;
+    toggleOrderType: () => void; // Toggle between 'vente' (sale) and 'retour' (return)
+    setOrderType: (type: 'vente' | 'retour') => void; // Set order type directly
     checkout: (payment?:PaymentData) => Promise<AxiosResponse<{
         message: string;
         template: string;
@@ -150,6 +153,7 @@ export const usePOSStore = create<POSState>((set, get) => ({
     lastOrderId: null,
     lastOrderTotal: null,
     lastOrderPaid: null,
+    orderType: 'vente', // Default to 'vente' (sale)
 
     fetchProducts: async () => {
         await handleAsyncOperation(async () => {
@@ -296,7 +300,7 @@ export const usePOSStore = create<POSState>((set, get) => ({
 
     checkout: async (paymentData?: PaymentData) => {
           return  await handleAsyncOperation(async () => {
-            const { cart, client } = get();
+            const { cart, client, orderType } = get();
 
             if (!client) {
                 throw new Error("Client is required for checkout");
@@ -304,7 +308,7 @@ export const usePOSStore = create<POSState>((set, get) => ({
 
             // Prepare order data
             const orderData: any = {
-                type:'bc',
+                type: orderType, // Use the selected order type ('vente' for sale, 'retour' for return)
                 client: client.id,
                 lignes : cart.map(item => ({
                     id: item.product.id,
@@ -414,5 +418,15 @@ export const usePOSStore = create<POSState>((set, get) => ({
 
     clearClient: () => {
         set({ client: null });
+    },
+    
+    toggleOrderType: () => {
+        const { orderType } = get();
+        // Toggle between 'vente' (sale) and 'retour' (return)
+        set({ orderType: orderType === 'vente' ? 'retour' : 'vente' });
+    },
+    
+    setOrderType: (type: 'vente' | 'retour') => {
+        set({ orderType: type });
     },
 }));

@@ -36,7 +36,10 @@ const CartContent = () => {
         lastOrderPaid,
         isPaymentComplete,
         addPaymentToOrder,
-        clearLastOrderInfo
+        clearLastOrderInfo,
+        orderType,
+        toggleOrderType,
+        setOrderType
     } = usePOSStore();
 
     const handleCheckout = () => {

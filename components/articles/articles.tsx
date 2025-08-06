@@ -13,8 +13,58 @@ const Articles = () => {
               <div className="px-4 py-3 border-b border-gray-100">
                   <h5 className="text-[#3b5461] font-medium">Products</h5>
               </div>
-              <div className="p-4">
-                  <div className="grid grid-cols-2 lg:grid-cols-3  gap-4">
+              <div className="p-4 flex flex-col overflow-hidden">
+                  <div className="grid grid-cols-2 lg:grid-cols-3  gap-4 overflow-y-scroll ">
+                      {
+                          products.map(product => (
+                              <ProductCard product={product} key={product.reference} onClick={addToCart} />
+                          ))
+                      }
+                      {
+                          products.map(product => (
+                              <ProductCard product={product} key={product.reference} onClick={addToCart} />
+                          ))
+                      }
+                      {
+                          products.map(product => (
+                              <ProductCard product={product} key={product.reference} onClick={addToCart} />
+                          ))
+                      }
+                      {
+                          products.map(product => (
+                              <ProductCard product={product} key={product.reference} onClick={addToCart} />
+                          ))
+                      }
+                      {
+                          products.map(product => (
+                              <ProductCard product={product} key={product.reference} onClick={addToCart} />
+                          ))
+                      }
+                      {
+                          products.map(product => (
+                              <ProductCard product={product} key={product.reference} onClick={addToCart} />
+                          ))
+                      }
+                      {
+                          products.map(product => (
+                              <ProductCard product={product} key={product.reference} onClick={addToCart} />
+                          ))
+                      }
+                      {
+                          products.map(product => (
+                              <ProductCard product={product} key={product.reference} onClick={addToCart} />
+                          ))
+                      }
+                      {
+                          products.map(product => (
+                              <ProductCard product={product} key={product.reference} onClick={addToCart} />
+                          ))
+                      }
+                      {
+                          products.map(product => (
+                              <ProductCard product={product} key={product.reference} onClick={addToCart} />
+                          ))
+                      }
                       {
                           products.map(product => (
                               <ProductCard product={product} key={product.reference} onClick={addToCart} />
