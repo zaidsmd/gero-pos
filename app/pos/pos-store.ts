@@ -30,6 +30,14 @@ interface CartItem {
     unit_price: number;
 }
 
+// Pagination metadata interface
+interface PaginationMeta {
+    currentPage: number;
+    lastPage: number;
+    hasNextPage: boolean;
+    nextPageUrl: string | null;
+}
+
 interface POSState {
     products: Product[];
     cart: CartItem[];
@@ -41,9 +49,12 @@ interface POSState {
     lastOrderTotal: number | null;
     lastOrderPaid: number | null;
     orderType: 'vente' | 'retour'; // 'vente' for sale, 'retour' for return
+    pagination: PaginationMeta;
+    isLoadingMore: boolean;
 
     // Actions
-    fetchProducts: () => Promise<void>;
+    fetchProducts: (page?: number) => Promise<void>;
+    fetchNextPage: () => Promise<void>;
     addToCart: (product: Product) => void;
     removeFromCart: (productId: string) => void;
     updateQuantity: (productId: string, quantity: number) => void;
@@ -149,17 +160,53 @@ export const usePOSStore = create<POSState>((set, get) => ({
     cartTotal: 0,
     client: null,
     isLoading: false,
+    isLoadingMore: false,
     error: null,
     lastOrderId: null,
     lastOrderTotal: null,
     lastOrderPaid: null,
     orderType: 'vente', // Default to 'vente' (sale)
+    pagination: {
+        currentPage: 1,
+        lastPage: 1,
+        hasNextPage: false,
+        nextPageUrl: null
+    },
 
-    fetchProducts: async () => {
+    fetchProducts: async (page = 1) => {
         await handleAsyncOperation(async () => {
-            const response = await endpoints.products.getAll();
-            set({products: response.data.data, isLoading: false});
+            const response = await endpoints.products.getAll(page);
+            const { data, links, meta } = response.data;
+            
+            // If it's the first page, replace products; otherwise append
+            const newProducts = page === 1 ? data : [...get().products, ...data];
+            
+            set({
+                products: newProducts,
+                isLoading: false,
+                pagination: {
+                    currentPage: meta.current_page,
+                    lastPage: meta.last_page,
+                    hasNextPage: !!links.next,
+                    nextPageUrl: links.next
+                }
+            });
         }, set, 'Failed to fetch products');
+    },
+    
+    fetchNextPage: async () => {
+        const { pagination, isLoadingMore } = get();
+        
+        // Don't fetch if already loading or no next page
+        if (isLoadingMore || !pagination.hasNextPage) return;
+        
+        set({ isLoadingMore: true });
+        
+        try {
+            await get().fetchProducts(pagination.currentPage + 1);
+        } finally {
+            set({ isLoadingMore: false });
+        }
     },
 
     addToCart: (product: Product) => {

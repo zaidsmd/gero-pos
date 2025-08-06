@@ -85,7 +85,7 @@ const endpoints = {
 
   // Products
   products: {
-    getAll: () => api.get('/articles-all'),
+    getAll: (page: number = 1) => api.get(`/articles-all?page=${page}`),
     getById: (id: string) => api.get(`/articles/${id}`),
     create: (data: any) => api.post('/articles', data),
     update: (id: string, data: any) => api.put(`/articles/${id}`, data),
