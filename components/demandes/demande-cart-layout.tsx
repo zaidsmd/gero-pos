@@ -4,6 +4,7 @@ import { useDemandesStore } from '../../stores/demandes-store';
 import { endpoints } from '../../services/api';
 import {toast} from "react-toastify";
 import axios, {type AxiosError} from "axios";
+import DemandeProductSearch from './demande-product-search';
 
 const DemandeCartLayout = () => {
     const {
@@ -82,7 +83,7 @@ const DemandeCartLayout = () => {
     return (
         <div className="rounded-lg flex flex-col w-full">
             <div className="flex p-4 gap-4">
-                <div className="w-full">
+                <div className="w-1/2">
                     <label className="block text-sm font-medium text-gray-700 mb-1">Magasin de sortie</label>
                     {isLoadingMagasins ? (
                         <div className="flex items-center space-x-2">
@@ -103,6 +104,9 @@ const DemandeCartLayout = () => {
                             ))}
                         </select>
                     )}
+                </div>
+                <div className="w-1/2">
+                    <DemandeProductSearch />
                 </div>
             </div>
             <DemandeCartTable/>
