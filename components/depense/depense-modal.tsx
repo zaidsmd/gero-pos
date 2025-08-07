@@ -11,7 +11,7 @@ const roundToTwoDecimals = (value: number): number => {
 interface DepenseModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSuccess?: () => void;
+    onSuccess?: (text:string) => void;
     serverErrors?: Record<string, string> | null;
 }
 
@@ -68,7 +68,6 @@ const DepenseModal: React.FC<DepenseModalProps> = ({
     const onFormSubmit: SubmitHandler<DepenseData> = async (data) => {
         // Round the amount to 2 decimal places
         data.montant = roundToTwoDecimals(data.montant);
-        
         // Validation for amount
         if (data.montant <= 0) {
             setError('montant', { 
@@ -80,13 +79,13 @@ const DepenseModal: React.FC<DepenseModalProps> = ({
         
         try {
             // Submit depense data
-            await createDepense(data);
-            setSuccessMessage('Dépense créée avec succès');
+            const response = await createDepense(data);
+            setSuccessMessage(response.data);
             reset();
             
             // Call onSuccess callback if provided
             if (onSuccess) {
-                onSuccess();
+                onSuccess(response.data);
             }
             
             // Close modal after a short delay
@@ -124,11 +123,6 @@ const DepenseModal: React.FC<DepenseModalProps> = ({
                     </div>
                 )}
 
-                {successMessage && (
-                    <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-md">
-                        {successMessage}
-                    </div>
-                )}
 
                 {error && (
                     <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">

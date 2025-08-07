@@ -102,7 +102,7 @@ const ProductSearch: React.FC = () => {
                     <input
                         type="text"
                         className="w-full py-2 px-3 outline-none bg-white rounded-md"
-                        placeholder="Rechercher un produit par référence ou nom..."
+                        placeholder="Rechercher un produit"
                         value={searchTerm}
                         onChange={handleSearch}
                         onFocus={handleFocus}
