@@ -16,7 +16,7 @@ const api = axios.create({
 // Request interceptor for adding auth token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('auth_token') || '16|f4OZQ7UNrNWP02mOks7WkJcgFeY86qzVADmqUh6Ga9e73025';
+    const token = localStorage.getItem('auth_token') || '23|0cPfD29JLljWN355qqnywdM2lwB1C06cyFOT4DVx531b824e';
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -113,6 +113,18 @@ const endpoints = {
   depenses: {
     getCategories: () => api.get('/depense-categories'),
     create: (data: any) => api.post('/depense', data),
+  },
+
+  // Demandes
+  demandes: {
+    getIntern: () => api.get('/mes-demandes'),
+    getExtern: () => api.get('/demandes-externe'),
+    create: (data: any) => api.post('/demande-transfert', data),
+    getMagasins: () => api.get('/magasins'),
+    cancel: (id: number) => api.post(`/demande-transfert/${id}/annuler`),
+    accept: (id: number) => api.post(`/demande-transfert/${id}/accepter`),
+    print: (id: number) => api.get(`/demandes-externe-print/${id}`),
+    livrer: (id: number, data: any) => api.post(`/demande-transfert/${id}/livrer`, data),
   },
 
   // Authentication

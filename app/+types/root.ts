@@ -1,8 +1,8 @@
-import type { LinksFunction, MetaFunction } from "react-router";
 
 export namespace Route {
+  // @ts-ignore
   export type LinksFunction = LinksFunction;
-  export type MetaFunction = MetaFunction;
+  // @ts-ignore
   export interface ErrorBoundaryProps {
     error: unknown;
   }
