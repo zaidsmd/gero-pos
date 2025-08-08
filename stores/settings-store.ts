@@ -7,6 +7,7 @@ interface SettingsState {
   features: {
     ticketPrinting: boolean;
     autoTicketPrinting: boolean;
+    priceEditing: boolean;
   };
 
   // Actions
@@ -22,6 +23,7 @@ export const useSettingsStore = create<SettingsState>()(
       features: {
         ticketPrinting: true, // Default to enabled
         autoTicketPrinting: true, // Default to enabled
+        priceEditing: false, // Default to enabled
       },
 
       // Toggle a feature flag
@@ -44,6 +46,20 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'gero-pos-settings', // Name for localStorage
+      version: 1,
+      migrate: (persistedState: any, version: number) => {
+        // Ensure new feature flags have sensible defaults when migrating from older versions
+        const state = persistedState || {};
+        const features = state.features || {};
+        return {
+          ...state,
+          features: {
+            ticketPrinting: features.ticketPrinting ?? true,
+            autoTicketPrinting: features.autoTicketPrinting ?? true,
+            priceEditing: features.priceEditing ?? true,
+          }
+        } as SettingsState;
+      }
     }
   )
 );

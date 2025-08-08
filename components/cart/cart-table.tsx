@@ -1,8 +1,10 @@
 import {formatNumber} from "../../utils/formats";
 import React, {type RefObject} from "react";
 import {usePOSStore} from "~/pos/pos-store";
+import {useSettingsStore} from "../../stores/settings-store";
 
 const CartTable = ({bottom}:{bottom:RefObject<HTMLDivElement|null>}) => {
+    const { features } = useSettingsStore();
     const handleQuantityChange = (productId: string, value: string) => {
         // Remove leading zeros
         const cleanValue = value.replace(/^0+/, '');
@@ -130,6 +132,7 @@ const CartTable = ({bottom}:{bottom:RefObject<HTMLDivElement|null>}) => {
                                        value={item.unit_price.toString().replace(/^0+(?=\d)/, '')}
                                        onChange={(e) => handlePriceChange(item.product.id, e.target.value)}
                                        className="w-full  outline-none rounded-md"
+                                       disabled={!features.priceEditing}
                                    />
                                </div>
                                <div className="w-2/12 flex items-center gap-1 pe-4">
