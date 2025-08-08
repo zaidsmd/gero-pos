@@ -76,11 +76,13 @@ const CartTable = ({bottom}:{bottom:RefObject<HTMLDivElement|null>}) => {
                         Prix
                     </h5>
                 </div>
-                <div className="w-2/12">
-                    <h5 className="font-medium text-white">
-                        Réduction
-                    </h5>
-                </div>
+                {features.reductionEnabled && (
+                    <div className="w-2/12">
+                        <h5 className="font-medium text-white">
+                            Réduction
+                        </h5>
+                    </div>
+                )}
                 <div className="w-2/12">
                     <h5 className="font-medium text-white ">
                         Total
@@ -135,33 +137,35 @@ const CartTable = ({bottom}:{bottom:RefObject<HTMLDivElement|null>}) => {
                                        disabled={!features.priceEditing}
                                    />
                                </div>
-                               <div className="w-2/12 flex items-center gap-1 pe-4">
-                                   <input
-                                       type="text"
-                                       min="0"
-                                       step="0.01"
-                                       value={(item.reduction ? item.reduction.toString().replace(/^0+(?=\d)/, '') : '')}
-                                       onChange={(e) => handleReductionChange(
-                                           item.product.id,
-                                           e.target.value,
-                                           item.reductionType || 'fixed'
-                                       )}
-                                       className="w-3/4 outline-none rounded-md "
-                                       placeholder="0.00"
-                                   />
-                                   <select
-                                       value={item.reductionType || 'fixed'}
-                                       onChange={(e) => handleReductionChange(
-                                           item.product.id,
-                                           item.reduction?.toString() || '0',
-                                           e.target.value as 'percentage' | 'fixed'
-                                       )}
-                                       className="w-1/4 outline-none rounded-md  appearance-none   "
-                                   >
-                                       <option value="fixed">MAD</option>
-                                       <option value="percentage">%</option>
-                                   </select>
-                               </div>
+                               {features.reductionEnabled && (
+                                   <div className="w-2/12 flex items-center gap-1 pe-4">
+                                       <input
+                                           type="text"
+                                           min="0"
+                                           step="0.01"
+                                           value={(item.reduction ? item.reduction.toString().replace(/^0+(?=\d)/, '') : '')}
+                                           onChange={(e) => handleReductionChange(
+                                               item.product.id,
+                                               e.target.value,
+                                               item.reductionType || 'fixed'
+                                           )}
+                                           className="w-3/4 outline-none rounded-md "
+                                           placeholder="0.00"
+                                       />
+                                       <select
+                                           value={item.reductionType || 'fixed'}
+                                           onChange={(e) => handleReductionChange(
+                                               item.product.id,
+                                               item.reduction?.toString() || '0',
+                                               e.target.value as 'percentage' | 'fixed'
+                                           )}
+                                           className="w-1/4 outline-none rounded-md  appearance-none   "
+                                       >
+                                           <option value="fixed">MAD</option>
+                                           <option value="percentage">%</option>
+                                       </select>
+                                   </div>
+                               )}
                                <div className="w-2/12 flex items-center ">
                                    <h5 className="font-medium text-primary ">
                                        {formatNumber(item.finalPrice, true)}

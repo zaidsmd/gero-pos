@@ -8,6 +8,7 @@ interface SettingsState {
     ticketPrinting: boolean;
     autoTicketPrinting: boolean;
     priceEditing: boolean;
+    reductionEnabled: boolean;
   };
 
   // Actions
@@ -24,6 +25,7 @@ export const useSettingsStore = create<SettingsState>()(
         ticketPrinting: true, // Default to enabled
         autoTicketPrinting: true, // Default to enabled
         priceEditing: false, // Default to enabled
+        reductionEnabled: true, // Default to enabled
       },
 
       // Toggle a feature flag
