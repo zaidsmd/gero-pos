@@ -1,11 +1,12 @@
+import React, { useState } from "react";
 import Articles from "../../components/articles/articles";
 import CartLayout from "../../components/cart/cart-layout";
 import TypeToggler from "~/pos/type-toggler";
 import { DepenseButton } from "../../components/depense";
-
+import { HistoryOffcanvas } from "../../components/history";
 
 export function POS() {
-
+  const [isHistoryOpen, setHistoryOpen] = useState(false);
 
   return (
     <div className="h-full w-full p-4 flex flex-col">
@@ -19,6 +20,13 @@ export function POS() {
             Demandes
           </a>
           <DepenseButton />
+          <button
+            onClick={() => setHistoryOpen(true)}
+            className="px-4 py-2 bg-gray-200 text-[#3b5461] rounded-md hover:bg-gray-300 transition-colors"
+          >
+            <svg className="inline-block mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M11 7a1 1 0 0 1 1-1h5.5a1 1 0 1 1 0 2H12a1 1 0 0 1-1-1m0 10a1 1 0 0 1 1-1h5.5a1 1 0 1 1 0 2H12a1 1 0 0 1-1-1m1-5a1 1 0 0 0 0 2h9.5a1 1 0 1 0 0-2z"/><path fill="currentColor" d="M2 7a2 2 0 0 1 2-2h3.5a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z"/></svg>
+            Historique
+          </button>
           <a href="/" className="px-4 py-2 bg-[#3b5461] text-white rounded-md hover:bg-[#2a3e48] transition-colors">
             Back
           </a>
@@ -39,6 +47,8 @@ export function POS() {
         </div>
 
       </div>
+
+      <HistoryOffcanvas isOpen={isHistoryOpen} onClose={() => setHistoryOpen(false)} />
     </div>
   );
 }

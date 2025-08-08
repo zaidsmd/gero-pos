@@ -13,13 +13,49 @@ const api = axios.create({
   timeout: 10000, // 10 seconds timeout
 });
 
-// Request interceptor for adding auth token
+// Request interceptor for adding auth token and session id
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('auth_token') || '23|6LqwzlglwVSMT3bawbBR7HGzU77ZeANFyiaSKMMu9ef6d256';
+    const sessionId = localStorage.getItem('session_id') || '1';
 
+    // Attach token like before
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      (config.headers as any).Authorization = `Bearer ${token}`;
+    }
+
+    // Add session_id "just like token" for all GETs and POSTs
+    try {
+      const method = (config.method || 'get').toLowerCase();
+      const urlStr = typeof config.url === 'string' ? config.url : '';
+      const urlHasSession = urlStr.includes('session_id=');
+
+      // For GET requests: add as query param if not already present
+      if (method === 'get') {
+        if (!urlHasSession) {
+          config.params = { ...(config.params || {}), session_id: sessionId };
+        }
+      }
+
+      // For POST requests: include in body (JSON) or FormData if not already present
+      if (method === 'post') {
+        const data = config.data;
+        if (data instanceof FormData) {
+          if (!data.has('session_id')) {
+            data.append('session_id', sessionId);
+          }
+        } else if (data && typeof data === 'object') {
+          if (!('session_id' in data)) {
+            (config as any).data = { ...data, session_id: sessionId };
+          }
+        } else if (!data) {
+          // No body yet, initialize with session_id
+          (config as any).data = { session_id: sessionId };
+        }
+      }
+    } catch (e) {
+      // Fail-safe: don't block the request if something goes wrong here
+      console.warn('Failed to attach session_id to request:', e);
     }
 
     return config;
@@ -107,6 +143,7 @@ const endpoints = {
     getById: (id: string) => api.get(`/orders/${id}`),
     getAll: () => api.get('/orders'),
     addPayment: (data: any) => api.post('/ventes-ajouter-paiement', data),
+    getTicket: (id: number | string) => api.get(`/ventes/ticket/${id}`),
   },
 
   // Depenses
@@ -133,6 +170,11 @@ const endpoints = {
       api.post('/auth/login', credentials),
     logout: () => api.post('/auth/logout'),
     refreshToken: () => api.post('/auth/refresh'),
+  },
+
+  // History
+  history: {
+    getSessionHistory: (sessionId: string | number) => api.get(`/history?session_id=${sessionId}`),
   },
 };
 
