@@ -38,7 +38,7 @@ const Articles = () => {
               <div className="p-4 flex flex-col overflow-hidden">
                   <div 
                       ref={scrollContainerRef}
-                      className="grid grid-cols-2 lg:grid-cols-3 gap-4 overflow-auto pb-2"
+                      className="grid grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 overflow-auto pb-2"
                       style={{ maxHeight: 'calc(100vh - 200px)' }}
                   >
                       {products.map(product => (

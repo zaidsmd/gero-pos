@@ -4,6 +4,7 @@ import React, {useState, useEffect, useRef} from "react";
 import CartTable from "./cart-table";
 import PaymentModal, {type PaymentData} from "./payment-modal";
 import {toast} from "react-toastify";
+import {useSettingsStore} from "../../stores/settings-store";
 
 const CartContent = () => {
     const [showSuccessToast, setShowSuccessToast] = useState(false);
@@ -11,8 +12,12 @@ const CartContent = () => {
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [isAdditionalPayment, setIsAdditionalPayment] = useState(false);
     const [serverErrors, setServerErrors] = useState<Record<string, string> | null | undefined>(null);
+    const [ticketTemplate, setTicketTemplate] = useState<string | null>(null);
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const bottomRef = useRef<HTMLDivElement | null>(null);
+
+    // Get the ticket printing feature flag from settings store
+    const { features } = useSettingsStore();
 
     useEffect(() => {
         // Create audio element when component mounts
@@ -25,6 +30,17 @@ const CartContent = () => {
             }
         };
     }, []);
+
+    // Auto print ticket when available and feature is enabled
+    useEffect(() => {
+        if (ticketTemplate && features.autoTicketPrinting && features.ticketPrinting) {
+            // Small delay to ensure the success toast is visible before printing
+            const timer = setTimeout(() => {
+                handlePrintTicket();
+            }, 500);
+            return () => clearTimeout(timer);
+        }
+    }, [ticketTemplate, features.autoTicketPrinting, features.ticketPrinting]);
     const {
         cart,
         cartTotal,
@@ -55,6 +71,7 @@ const CartContent = () => {
 
         checkout().then(response => {
             setSuccessMessage(response.data.message);
+            setTicketTemplate(response.data.template || null);
             setShowSuccessToast(true);
             if (audioRef.current) {
                 audioRef.current.currentTime = 0; // Reset to start
@@ -62,7 +79,7 @@ const CartContent = () => {
             }
         });
     };
-    
+
     const handleCreditCheckout = () => {
         if (cart.length === 0) {
             toast.warning("Le panier est vide");
@@ -73,7 +90,7 @@ const CartContent = () => {
             toast.warning("Veuillez sélectionner un client");
             return;
         }
-        
+
         // Create payment data with credit field set to true
         const paymentData: PaymentData = {
             amount: cartTotal,
@@ -85,6 +102,7 @@ const CartContent = () => {
 
         checkout(paymentData).then(response => {
             setSuccessMessage(response.data.message);
+            setTicketTemplate(response.data.template || null);
             setShowSuccessToast(true);
             if (audioRef.current) {
                 audioRef.current.currentTime = 0; // Reset to start
@@ -94,13 +112,13 @@ const CartContent = () => {
             handlePaymentError(err);
         });
     };
-    
+
     const handleAdditionalPayment = () => {
         if (!lastOrderId) {
             toast.warning("Aucune commande à compléter");
             return;
         }
-        
+
         setIsAdditionalPayment(true);
         setShowPaymentModal(true);
     };
@@ -121,7 +139,7 @@ const CartContent = () => {
     const handlePaymentSubmit = (paymentData: PaymentData) => {
         // Reset server errors when submitting
         setServerErrors(null);
-        
+
         if (isAdditionalPayment && lastOrderId) {
             // Add payment to existing order
             addPaymentToOrder(lastOrderId, paymentData).then(response => {
@@ -140,6 +158,7 @@ const CartContent = () => {
             // Regular checkout with payment
             checkout(paymentData).then(response => {
                 setSuccessMessage(response.data.message);
+                setTicketTemplate(response.data.template || null);
                 setShowSuccessToast(true);
                 setShowPaymentModal(false);
                 if (audioRef.current) {
@@ -151,7 +170,7 @@ const CartContent = () => {
             });
         }
     };
-    
+
     const handlePaymentError = (err: any) => {
         if (err.response?.data?.error) {
             toast.error(err.response.data.error);
@@ -159,17 +178,67 @@ const CartContent = () => {
             // Format server errors for react-hook-form
             const errors = err.response.data.errors;
             const formattedErrors: Record<string, string> = {};
-            
+
             Object.entries(errors).forEach(([key, value]) => {
                 formattedErrors[key] = Array.isArray(value) ? value[0] : value as string;
             });
-            
+
             // Set server errors to be passed to the PaymentModal
             setServerErrors(formattedErrors);
         } else {
             // Handle unexpected errors
             toast.error("Une erreur s'est produite lors du traitement du paiement");
         }
+    };
+
+    const handlePrintTicket = () => {
+        if (!ticketTemplate) {
+            toast.warning("Aucun ticket à imprimer");
+            return;
+        }
+
+        // Create a hidden iframe for printing
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = '0';
+
+        // Append iframe to the document
+        document.body.appendChild(iframe);
+
+        // Write the template HTML to the iframe
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+        if (!iframeDoc) {
+            toast.error("Impossible de créer le document d'impression");
+            document.body.removeChild(iframe);
+            return;
+        }
+
+        iframeDoc.open();
+        iframeDoc.write(ticketTemplate);
+        iframeDoc.close();
+
+        // Wait for the content to load before printing
+        iframe.onload = () => {
+            try {
+                // Focus the iframe for printing
+                iframe.contentWindow?.focus();
+                // Print the iframe content
+                iframe.contentWindow?.print();
+
+                // Remove the iframe after a delay to ensure print dialog has time to open
+                setTimeout(() => {
+                    document.body.removeChild(iframe);
+                }, 1000);
+            } catch (err) {
+                console.error("Error printing:", err);
+                toast.error("Erreur lors de l'impression");
+                document.body.removeChild(iframe);
+            }
+        };
     };
     return (
         <div className="flex flex-col w-full h-full justify-between ">
@@ -197,10 +266,19 @@ const CartContent = () => {
                                 {successMessage}
                             </p>
                             <div className="flex flex-col space-y-2">
+                                {ticketTemplate && features.ticketPrinting && (
+                                    <button
+                                        onClick={handlePrintTicket}
+                                        className="w-full rounded-md bg-blue-600 px-4 py-2 text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"
+                                    >
+                                        Imprimer le ticket
+                                    </button>
+                                )}
                                 {!isPaymentComplete() && lastOrderId && (
                                     <button
                                         onClick={() => {
                                             setShowSuccessToast(false);
+                                            setTicketTemplate(null);
                                             handleAdditionalPayment();
                                         }}
                                         className="w-full rounded-md bg-indigo-600 px-4 py-2 text-white transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2"
@@ -211,6 +289,7 @@ const CartContent = () => {
                                 <button
                                     onClick={() => {
                                         setShowSuccessToast(false);
+                                        setTicketTemplate(null);
                                         clearLastOrderInfo();
                                     }}
                                     className="w-full rounded-md bg-green-600 px-4 py-2 text-white transition hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2"
