@@ -4,6 +4,7 @@ import DemandeCartLayout from "../../components/demandes/demande-cart-layout";
 import DemandeArticles from "../../components/demandes/demande-articles";
 import MaDemande from "../../components/demandes/ma-demande";
 import DemandesExterne from "../../components/demandes/DemandesExterne";
+import {Link} from "react-router";
 
 const Demandes = () => {
     const {
@@ -25,9 +26,9 @@ const Demandes = () => {
         <div className="h-full w-full p-4 flex flex-col">
             <div className="flex justify-between items-center mb-6">
                 <div className="flex items-center gap-3" >
-                    <a href="/pos" className=" text-primary">
+                    <Link to="/pos" className=" text-primary">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="m4 12l6-6m-6 6l6 6m-6-6h10.5m5.5 0h-2.5"/></svg>
-                    </a>
+                    </Link>
                     <h1 className="text-2xl font-semibold text-[#3b5461]">Demandes</h1>
                 </div>
             </div>

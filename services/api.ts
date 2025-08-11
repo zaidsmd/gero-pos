@@ -16,7 +16,7 @@ const api = axios.create({
 // Request interceptor for adding auth token and session id
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('auth_token') || '23|6LqwzlglwVSMT3bawbBR7HGzU77ZeANFyiaSKMMu9ef6d256';
+    const token = localStorage.getItem('auth_token') || '25|w5zTdVjUHYF1IOmJtlKRVHfY34x6ZN9DV0y1mss968b85661';
     const sessionId = localStorage.getItem('session_id') || '1';
 
     // Attach token like before
@@ -175,6 +175,15 @@ const endpoints = {
   // History
   history: {
     getSessionHistory: (sessionId: string | number) => api.get(`/history?session_id=${sessionId}`),
+  },
+
+  // Rapports
+  rapports: {
+    tresorieRapport: () => api.get('/tresorie-rapport'),
+    creanceRapport: () => api.get('/creance-rapport'),
+    articlesFournisseursRapport: () => api.get('/articles-fournisseurs-rapport'),
+    articlesClientsRapport: () => api.get('/articles-clients-rapport'),
+    articlesStockRapport: () => api.get('/articles-stock-rapport'),
   },
 };
 
