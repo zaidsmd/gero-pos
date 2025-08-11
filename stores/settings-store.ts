@@ -30,7 +30,7 @@ export const useSettingsStore = create<SettingsState>()(
             features: {
                 ticketPrinting: true,
                 autoTicketPrinting: true,
-                priceEditing: true,
+                priceEditing: false,
                 reductionEnabled: true,
             },
 

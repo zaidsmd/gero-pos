@@ -66,9 +66,9 @@ export interface TreasuryRapport {
 interface RapportStore {
     stock:StockRapport[];
     saleByProductAndCLient:SaleByProductAndClientRapport,
-    productBySupplier:ProductBySupplierRapport[],
+    productBySupplier:ProductBySupplierRapport,
     paymentsAndCredit:PaymentsAndCreditRapport[],
-    treasury:any[],
+    treasury:TreasuryRapport,
     isLoading:boolean;
     isError:boolean;
     error:string|null;
@@ -92,9 +92,20 @@ export const useRapportsStore = create<RapportStore>((set) => ({
         data: {},
         client_totals: {}
     },
-    productBySupplier: [],
-    paymentsAndCredit: [],
-    treasury: [],
+    productBySupplier: {
+        fournisseurs: [],
+        articles: [],
+        data: {},
+    },
+    paymentsAndCredit:[],
+    treasury: {
+        reste_en_caisse:0,
+        total_cheque:0,
+        total_depenses:0,
+        total_espece:0,
+        total_lcn:0,
+        total_vente:0,
+    },
     isLoading: false,
     isError: false,
     error: null,
@@ -134,7 +145,7 @@ export const useRapportsStore = create<RapportStore>((set) => ({
         set({ isLoading: true, isError: false, error: null });
         try {
             const { data } = await endpoints.rapports.articlesFournisseursRapport();
-            set({ productBySupplier: Array.isArray(data) ? (data as any) : ([data] as any) });
+            set({ productBySupplier:data });
         } catch (e: any) {
             set({ isError: true, error: e?.message || 'Failed to fetch product by supplier report' });
         } finally {
@@ -158,7 +169,7 @@ export const useRapportsStore = create<RapportStore>((set) => ({
         set({ isLoading: true, isError: false, error: null });
         try {
             const { data } = await endpoints.rapports.tresorieRapport();
-            set({ treasury: Array.isArray(data) ? (data as any) : ([data] as any) });
+            set({ treasury: data});
         } catch (e: any) {
             set({ isError: true, error: e?.message || 'Failed to fetch treasury report' });
         } finally {

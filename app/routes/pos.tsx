@@ -1,6 +1,6 @@
 import type { Route } from "./+types/pos";
-import { POS } from "../pos/pos";
-import { POSLayout } from "../pos/pos-layout";
+import { POS } from "~/pos/pos";
+import { POSLayout } from "~/pos/pos-layout";
 
 export function meta({}: Route.MetaArgs) {
   return [
