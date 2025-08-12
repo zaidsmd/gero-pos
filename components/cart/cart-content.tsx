@@ -55,7 +55,9 @@ const CartContent = () => {
         clearLastOrderInfo,
         orderType,
         toggleOrderType,
-        setOrderType
+        setOrderType,
+        globalReduction,
+        setGlobalReduction,
     } = usePOSStore();
 
     const handleCheckout = () => {
@@ -322,6 +324,29 @@ const CartContent = () => {
                             >
                                 Compléter le paiement
                             </button>
+                        </div>
+                    </div>
+                )}
+                {features.globalReductionEnabled && (
+                    <div className="flex justify-between items-center mb-3 gap-4">
+                        <div className="flex items-center gap-2 w-2/3">
+                            <span className="font-medium text-gray-700 whitespace-nowrap">Réduction globale:</span>
+                            <input
+                                type="text"
+                                className="w-full outline-none rounded-md border border-gray-200 px-2 py-1"
+                                value={(globalReduction ? globalReduction.toString().replace(/^0+(?=\d)/, '') : '')}
+                                onChange={(e) => {
+                                    const clean = e.target.value.replace(/^0+(?=\d)/, '');
+                                    const val = parseFloat(clean || '0');
+                                    if (!isNaN(val)) setGlobalReduction(val);
+                                    else setGlobalReduction(0);
+                                }}
+                                placeholder="0.00"
+                            />
+                            <span className="px-2 py-1 text-gray-600">%</span>
+                        </div>
+                        <div className="flex flex-col items-end w-1/3">
+                            <span className="text-xs text-gray-500">Sous-total: {formatNumber(cart.reduce((s,i)=>s+i.finalPrice,0), true)}</span>
                         </div>
                     </div>
                 )}

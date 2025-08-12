@@ -52,6 +52,9 @@ interface POSState {
     pagination: PaginationMeta;
     isLoadingMore: boolean;
 
+    // Global reduction (applies to whole cart)
+    globalReduction?: number;
+
     // Actions
     fetchProducts: (page?: number) => Promise<void>;
     fetchNextPage: () => Promise<void>;
@@ -60,6 +63,9 @@ interface POSState {
     updateQuantity: (productId: string, quantity: number) => void;
     updatePrice: (productId: string, price: number) => void;
     updateReduction: (productId: string, reduction: number, reductionType: 'percentage' | 'fixed') => void;
+    // Global reduction actions
+    setGlobalReduction: (reduction: number) => void;
+
     clearCart: () => void;
     toggleOrderType: () => void; // Toggle between 'vente' (sale) and 'retour' (return)
     setOrderType: (type: 'vente' | 'retour') => void; // Set order type directly
@@ -131,9 +137,24 @@ const roundToTwoDecimals = (value: number): number => {
     return Math.round((value + Number.EPSILON) * 100) / 100;
 };
 
-// Helper function to calculate the total price of all items in the cart
+// Helper function to calculate the total price of all items in the cart (subtotal before global reduction)
 const calculateCartTotal = (cart: CartItem[]): number => {
     const total = cart.reduce((sum, item) => sum + item.finalPrice, 0);
+    return roundToTwoDecimals(total);
+};
+
+// Apply a global reduction on the cart subtotal
+const applyGlobalReduction = (
+    subtotal: number,
+    reduction?: number
+): number => {
+    // Always treat global reduction as percentage per requirements
+    if (reduction === undefined || reduction === null || reduction === 0) {
+        return roundToTwoDecimals(subtotal);
+    }
+
+    const clamped = Math.min(Math.max(reduction, 0), 100);
+    const total = subtotal * (1 - clamped / 100);
     return roundToTwoDecimals(total);
 };
 
@@ -172,6 +193,9 @@ export const usePOSStore = create<POSState>((set, get) => ({
         hasNextPage: false,
         nextPageUrl: null
     },
+
+    // Global reduction defaults
+    globalReduction: 0,
 
     fetchProducts: async (page = 1) => {
         await handleAsyncOperation(async () => {
@@ -238,7 +262,8 @@ export const usePOSStore = create<POSState>((set, get) => ({
             }));
 
             const newCartTotal = calculateCartTotal(updatedCart);
-            set({cart: updatedCart, cartTotal: newCartTotal});
+            const grandTotal = applyGlobalReduction(newCartTotal, get().globalReduction);
+            set({cart: updatedCart, cartTotal: grandTotal});
         } else {
             const finalPrice = calculateFinalPrice(
                 product.prix,
@@ -255,7 +280,8 @@ export const usePOSStore = create<POSState>((set, get) => ({
                 finalPrice: finalPrice
             }];
             const newCartTotal = calculateCartTotal(newCart);
-            set({cart: newCart, cartTotal: newCartTotal});
+            const grandTotal = applyGlobalReduction(newCartTotal, get().globalReduction);
+            set({cart: newCart, cartTotal: grandTotal});
         }
         
         // Play barcode sound when item is added to cart
@@ -266,7 +292,8 @@ export const usePOSStore = create<POSState>((set, get) => ({
         const {cart} = get();
         const newCart = cart.filter(item => item.product.id !== productId);
         const newCartTotal = calculateCartTotal(newCart);
-        set({cart: newCart, cartTotal: newCartTotal});
+        const grandTotal = applyGlobalReduction(newCartTotal, get().globalReduction);
+        set({cart: newCart, cartTotal: grandTotal});
     },
 
     updateQuantity: (productId: string, quantity: number) => {
@@ -290,7 +317,8 @@ export const usePOSStore = create<POSState>((set, get) => ({
         });
 
         const newCartTotal = calculateCartTotal(updatedCart);
-        set({cart: updatedCart, cartTotal: newCartTotal});
+        const grandTotal = applyGlobalReduction(newCartTotal, get().globalReduction);
+        set({cart: updatedCart, cartTotal: grandTotal});
     },
 
     updateReduction: (productId: string, reduction: number, reductionType: 'percentage' | 'fixed') => {
@@ -314,7 +342,8 @@ export const usePOSStore = create<POSState>((set, get) => ({
         });
 
         const newCartTotal = calculateCartTotal(updatedCart);
-        set({cart: updatedCart, cartTotal: newCartTotal});
+        const grandTotal = applyGlobalReduction(newCartTotal, get().globalReduction);
+        set({cart: updatedCart, cartTotal: grandTotal});
     },
 
     updatePrice: (productId: string, price: number) => {
@@ -338,11 +367,22 @@ export const usePOSStore = create<POSState>((set, get) => ({
         });
 
         const newCartTotal = calculateCartTotal(updatedCart);
-        set({cart: updatedCart, cartTotal: newCartTotal});
+        const grandTotal = applyGlobalReduction(newCartTotal, get().globalReduction);
+        set({cart: updatedCart, cartTotal: grandTotal});
+    },
+
+    // Set global reduction value and recompute total
+    setGlobalReduction: (reduction: number) => {
+        // Always percentage: clamp 0..100
+        let value = Math.max(0, reduction);
+        value = Math.min(100, value);
+        const subtotal = calculateCartTotal(get().cart);
+        const grandTotal = applyGlobalReduction(subtotal, value);
+        set({ globalReduction: value, cartTotal: grandTotal });
     },
 
     clearCart: () => {
-        set({cart: [], cartTotal: 0});
+        set({cart: [], cartTotal: 0, globalReduction: 0});
     },
 
     checkout: async (paymentData?: PaymentData) => {
@@ -354,6 +394,7 @@ export const usePOSStore = create<POSState>((set, get) => ({
             }
 
             // Prepare order data
+            const grValue = Math.min(100, Math.max(0, get().globalReduction ?? 0));
             const orderData: any = {
                 type: orderType, // Use the selected order type ('vente' for sale, 'retour' for return)
                 client: client.id,
@@ -366,6 +407,8 @@ export const usePOSStore = create<POSState>((set, get) => ({
                     reduction_type: item.reductionType || 'fixed',
                     final_price: item.finalPrice
                 })),
+                // Global reduction applied to the whole order (always percentage)
+                global_reduction: grValue,
                 exercice: 2025,
                 session_id:"1",
             };

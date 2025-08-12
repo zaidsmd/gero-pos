@@ -7,6 +7,7 @@ interface SettingsState {
         autoTicketPrinting: boolean;
         priceEditing: boolean;
         reductionEnabled: boolean;
+        globalReductionEnabled: boolean;
     };
 
     rapports: {
@@ -32,6 +33,7 @@ export const useSettingsStore = create<SettingsState>()(
                 autoTicketPrinting: true,
                 priceEditing: false,
                 reductionEnabled: true,
+                globalReductionEnabled: true,
             },
 
             rapports: {
@@ -74,6 +76,7 @@ export const useSettingsStore = create<SettingsState>()(
                         autoTicketPrinting: features.autoTicketPrinting ?? true,
                         priceEditing: features.priceEditing ?? true,
                         reductionEnabled: features.reductionEnabled ?? true,
+                        globalReductionEnabled: features.globalReductionEnabled ?? true,
                     },
                     rapports: {
                         stock:features.stock ?? true,

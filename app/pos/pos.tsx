@@ -5,6 +5,7 @@ import TypeToggler from "~/pos/type-toggler";
 import { DepenseButton } from "../../components/depense";
 import { HistoryOffcanvas } from "../../components/history";
 import {Link} from "react-router";
+import Keyboard from "../../components/keyboard";
 
 export function POS() {
   const [isHistoryOpen, setHistoryOpen] = useState(false);
@@ -47,7 +48,8 @@ export function POS() {
             <TypeToggler/>
           </div>
           <div className="bg-white rounded-lg shadow-sm p-4 w-full flex-grow  flex flex-col overflow-hidden">
-            <Articles/>
+            {/*<Articles/>*/}
+              <Keyboard/>
           </div>
         </div>
 
