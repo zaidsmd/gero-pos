@@ -14,13 +14,13 @@ const CartTable = ({bottom}:{bottom:RefObject<HTMLDivElement|null>}) => {
         }
     };
 
-    const handleReductionChange = (productId: string, value: string, type: 'percentage' | 'fixed') => {
+    const handleReductionChange = (productId: string, value: string, type: 'pourcentage' | 'fixe') => {
         // Remove leading zeros while preserving decimal part
         const cleanValue = value.replace(/^0+(?=\d)/, '');
         const reduction = parseFloat(cleanValue || '0');
         if (!isNaN(reduction)) {
-            if (type === 'percentage') {
-                // Ensure percentage reduction is between 0 and 100
+            if (type === 'pourcentage') {
+                // Ensure pourcentage reduction is between 0 and 100
                 const validReduction = Math.min(Math.max(0, reduction), 100);
                 updateReduction(productId, validReduction, type);
             } else { // fixed type
@@ -54,7 +54,8 @@ const CartTable = ({bottom}:{bottom:RefObject<HTMLDivElement|null>}) => {
         removeFromCart,
         updateQuantity,
         updatePrice,
-        updateReduction
+        updateReduction,
+        globalReduction
     } = usePOSStore();
 
     const style = `calc(100vh - ${(bottom?.current?.clientHeight ?? 0) + 330}px)`
@@ -147,22 +148,24 @@ const CartTable = ({bottom}:{bottom:RefObject<HTMLDivElement|null>}) => {
                                            onChange={(e) => handleReductionChange(
                                                item.product.id,
                                                e.target.value,
-                                               item.reductionType || 'fixed'
+                                               item.reductionType || 'fixe'
                                            )}
                                            className="w-3/4 outline-none rounded-md "
                                            placeholder="0.00"
+                                           disabled={(globalReduction ?? 0) > 0}
                                        />
                                        <select
-                                           value={item.reductionType || 'fixed'}
+                                           value={item.reductionType || 'fixe'}
                                            onChange={(e) => handleReductionChange(
                                                item.product.id,
                                                item.reduction?.toString() || '0',
-                                               e.target.value as 'percentage' | 'fixed'
+                                               e.target.value as 'pourcentage' | 'fixe'
                                            )}
                                            className="w-1/4 outline-none rounded-md  appearance-none   "
+                                           disabled={(globalReduction ?? 0) > 0}
                                        >
-                                           <option value="fixed">MAD</option>
-                                           <option value="percentage">%</option>
+                                           <option value="fixe">MAD</option>
+                                           <option value="pourcentage">%</option>
                                        </select>
                                    </div>
                                )}

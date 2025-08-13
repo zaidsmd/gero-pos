@@ -1,4 +1,4 @@
-import {keys} from "../product-search/keys";
+import {keys} from "./keys";
 import Button from "./button";
 import useProductSearch from "../product-search/useProductSearch";
 

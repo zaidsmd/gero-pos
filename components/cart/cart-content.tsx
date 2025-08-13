@@ -331,22 +331,42 @@ const CartContent = () => {
                     <div className="flex justify-between items-center mb-3 gap-4">
                         <div className="flex items-center gap-2 w-2/3">
                             <span className="font-medium text-gray-700 whitespace-nowrap">Réduction globale:</span>
-                            <input
-                                type="text"
-                                className="w-full outline-none rounded-md border border-gray-200 px-2 py-1"
-                                value={(globalReduction ? globalReduction.toString().replace(/^0+(?=\d)/, '') : '')}
-                                onChange={(e) => {
-                                    const clean = e.target.value.replace(/^0+(?=\d)/, '');
-                                    const val = parseFloat(clean || '0');
-                                    if (!isNaN(val)) setGlobalReduction(val);
-                                    else setGlobalReduction(0);
-                                }}
-                                placeholder="0.00"
-                            />
-                            <span className="px-2 py-1 text-gray-600">%</span>
+                            <div className="flex items-center gap-2 w-full">
+                                <input
+                                    type="number"
+                                    inputMode="decimal"
+                                    min={0}
+                                    max={100}
+                                    step="0.01"
+                                    className="w-full outline-none rounded-md border border-gray-200 px-2 py-1"
+                                    value={(globalReduction ? Number(globalReduction) : '')}
+                                    onChange={(e) => {
+                                        const v = e.target.value;
+                                        if (v === '') { setGlobalReduction(0); return; }
+                                        const val = parseFloat(v);
+                                        if (!isNaN(val)) {
+                                            const clamped = Math.min(100, Math.max(0, val));
+                                            setGlobalReduction(clamped);
+                                        } else {
+                                            setGlobalReduction(0);
+                                        }
+                                    }}
+                                    onBlur={(e) => {
+                                        const val = parseFloat(e.target.value || '0');
+                                        const clamped = Math.min(100, Math.max(0, isNaN(val) ? 0 : val));
+                                        setGlobalReduction(clamped);
+                                    }}
+                                    placeholder="0.00"
+                                    aria-label="Réduction globale (%)"
+                                />
+                                <span className="px-2 py-1 text-gray-600">%</span>
+                            </div>
                         </div>
                         <div className="flex flex-col items-end w-1/3">
                             <span className="text-xs text-gray-500">Sous-total: {formatNumber(cart.reduce((s,i)=>s+i.finalPrice,0), true)}</span>
+                            {(globalReduction ?? 0) > 0 && (
+                                <span className="text-xs text-gray-500">Remise: {formatNumber(cart.reduce((s,i)=>s+i.finalPrice,0) - cartTotal, true)}</span>
+                            )}
                         </div>
                     </div>
                 )}

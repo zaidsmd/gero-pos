@@ -10,13 +10,13 @@ const api = axios.create({
     'Content-Type': 'application/json',
     // Default headers can be set here
   },
-  timeout: 10000, // 10 seconds timeout
+  timeout: 10000,
 });
 
 // Request interceptor for adding auth token and session id
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('auth_token') || '35|ulIPwQoREBNZH8oPZQzsMbndbuY1QfkTHxgLZkLfd8add2a0';
+    const token = localStorage.getItem('auth_token') || '27|fyBJtGVckznjvNSLNXi5o7cOs7VQ099gQdOxCc8U8e8517c9';
     const sessionId = localStorage.getItem('session_id') || '1';
 
     // Attach token like before

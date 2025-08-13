@@ -82,3 +82,54 @@ for (const ht of testValues) {
     console.log(`  Old: ${oldRes}, Backend: ${backendRes}, Diff: ${oldRes - backendRes}`);
     console.log(`  New: ${newRes}, Backend: ${backendRes}, Diff: ${newRes - backendRes}`);
 }
+
+// ---------------------- Global Reduction Tests ----------------------
+// Line-level price calculator (mirrors frontend/backend per-line rounding)
+const lineFinalPrice = (unitPrice, quantity, reduction, reductionType, tax) => {
+  let htUnit = unitPrice;
+  if (reduction !== undefined && reductionType !== undefined) {
+    if (reductionType === 'pourcentage') htUnit = unitPrice * (1 - reduction / 100);
+    else htUnit = Math.max(0, unitPrice - reduction);
+  }
+  const htRounded = roundToTwoDecimals(htUnit);
+  const ttcUnit = roundToTwoDecimals(htRounded * (1 + (tax || 0) / 100));
+  return roundToTwoDecimals(ttcUnit * quantity);
+};
+
+// Incorrect method: apply global reduction on TTC subtotal
+const cartTotalTTCGlobal = (cart, globalReduction) => {
+  const subtotalTTC = roundToTwoDecimals(cart.reduce((s, it) => s + lineFinalPrice(it.unit_price, it.quantity, it.reduction, it.reductionType, it.tax), 0));
+  const gr = Math.min(Math.max(globalReduction || 0, 0), 100);
+  return roundToTwoDecimals(subtotalTTC * (1 - gr / 100));
+};
+
+// Correct method: apply global reduction on HT before tax, per item
+const cartGrandTotalHTGlobal = (cart, globalReduction) => {
+  const gr = Math.min(Math.max(globalReduction || 0, 0), 100);
+  const total = cart.reduce((sum, it) => {
+    let htUnit = it.unit_price;
+    if (it.reduction !== undefined && it.reductionType !== undefined) {
+      if (it.reductionType === 'pourcentage') htUnit = it.unit_price * (1 - it.reduction / 100);
+      else htUnit = Math.max(0, it.unit_price - it.reduction);
+    }
+    const htAfterGlobal = htUnit * (1 - gr / 100);
+    const htRounded = roundToTwoDecimals(htAfterGlobal);
+    const ttcUnit = roundToTwoDecimals(htRounded * (1 + (it.tax || 0) / 100));
+    const lineTotal = roundToTwoDecimals(ttcUnit * it.quantity);
+    return sum + lineTotal;
+  }, 0);
+  return roundToTwoDecimals(total);
+};
+
+// Sample cart with mixed taxes and reductions
+const sampleCart = [
+  { unit_price: 100, quantity: 1, reduction: 0, reductionType: 'fixe', tax: 20 }, // 100 HT @20%
+  { unit_price: 50, quantity: 2, reduction: 10, reductionType: 'pourcentage', tax: 7 }, // 10% line reduction, @7%
+  { unit_price: 33.33, quantity: 3, reduction: 5, reductionType: 'fixe', tax: 0 }, // tax-exempt
+];
+
+const globalReduction = 10; // 10%
+
+console.log('\nGlobal reduction tests (10%):');
+console.log('TTC-based global (incorrect):', cartTotalTTCGlobal(sampleCart, globalReduction));
+console.log('HT-based global (correct):   ', cartGrandTotalHTGlobal(sampleCart, globalReduction));

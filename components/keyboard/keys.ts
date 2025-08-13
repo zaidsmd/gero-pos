@@ -1,4 +1,4 @@
-import useProductSearch from "./useProductSearch";
+import useProductSearch from "../product-search/useProductSearch";
 import React, {type ReactNode} from "react";
 
 interface Key {
@@ -10,7 +10,7 @@ interface Key {
 export const keys:()=>Key[] = () => {
   const { setSearchTerm,containerRef } = useProductSearch();
   // Use explicit numpad layout order: 7,8,9,4,5,6,1,2,3,0
-  const values = [7, 8, 9, 4, 5, 6, 1, 2, 3, 0];
+  const values = [7, 8, 9, 4, 5, 6, 1, 2, 3, 0,"P","SP","G"];
 
   const clearIcon: ReactNode = React.createElement(
     'svg',
@@ -39,10 +39,11 @@ export const keys:()=>Key[] = () => {
   keys = [
       ...keys.slice(0,9),
       { value: clearIcon, onclick: (e: React.MouseEvent<HTMLDivElement>, value: string|ReactNode) => setSearchTerm('', false), className: "bg-red-500 hover:bg-red-600 text-white fill-white" },
-      ...keys.slice(9),
+      ...keys.slice(9,10),
       {
           value:validateIcon,onclick:  (e: React.MouseEvent<HTMLDivElement>, value: string|ReactNode) =>setSearchTerm((prev)=>prev), className:"bg-green-500 hover:bg-green-600 text-white fill-white"
-      }
+      },
+      ...keys.slice(10)
   ];
 
   return keys;
