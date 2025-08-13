@@ -8,7 +8,10 @@ interface SettingsState {
         priceEditing: boolean;
         reductionEnabled: boolean;
         globalReductionEnabled: boolean;
+        demandes: boolean;
     };
+    
+    posType: "parfums" | "classic"|"caisse";
 
     rapports: {
         stock:boolean;
@@ -34,8 +37,9 @@ export const useSettingsStore = create<SettingsState>()(
                 priceEditing: false,
                 reductionEnabled: true,
                 globalReductionEnabled: true,
+                demandes: true,
             },
-
+            posType: "parfums",
             rapports: {
                 stock:true,
                 saleByProductAndCLient:true,
@@ -65,7 +69,7 @@ export const useSettingsStore = create<SettingsState>()(
         }),
         {
             name: 'gero-pos-settings',
-            version: 1,
+            version: 2,
             migrate: (persistedState: any, version: number) => {
                 const state = persistedState || {};
                 const features = state.features || {};
@@ -77,6 +81,7 @@ export const useSettingsStore = create<SettingsState>()(
                         priceEditing: features.priceEditing ?? true,
                         reductionEnabled: features.reductionEnabled ?? true,
                         globalReductionEnabled: features.globalReductionEnabled ?? true,
+                        demandes: features.demandes ?? true,
                     },
                     rapports: {
                         stock:features.stock ?? true,

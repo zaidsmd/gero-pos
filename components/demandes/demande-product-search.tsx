@@ -1,99 +1,24 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
-// @ts-ignore
-import { debounce } from 'lodash';
-import { type Product, useDemandesStore } from '../../stores/demandes-store';
+import React from 'react';
+import { type Product } from '../../stores/demandes-store';
+import useDemandeProductSearch from './useDemandeProductSearch';
 
 const DemandeProductSearch: React.FC = () => {
-    const [searchTerm, setSearchTerm] = useState<string>('');
-    const [searchResults, setSearchResults] = useState<Product[]>([]);
-    const [loading, setLoading] = useState<boolean>(false);
-    const [isOpen, setIsOpen] = useState<boolean>(false);
-    const [isFocused, setIsFocused] = useState<boolean>(false);
-    const containerRef = useRef<HTMLDivElement>(null);
-    
-    // Use the Demandes store
-    const { products, fetchProducts, addToDemandeCart } = useDemandesStore();
-
-    // Fetch products if they're not already loaded
-    useEffect(() => {
-        if (!products.length) {
-            fetchProducts();
-        }
-    }, [products, fetchProducts]);
-
-    // Close dropdown when clicking outside
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-                setIsOpen(false);
-            }
-        };
-
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, []);
-
-    // Debounced search function
-    const debouncedSearch = useCallback(
-        debounce((search: string) => {
-            if (!search.trim()) {
-                setSearchResults([]);
-                return;
-            }
-
-            setLoading(true);
-            
-            // Filter products by reference or designation (case insensitive)
-            const searchLower = search.toLowerCase();
-            const results = products.filter(product => 
-                product.reference.toLowerCase().includes(searchLower) || 
-                product.designation.toLowerCase().includes(searchLower)
-            );
-            
-            setSearchResults(results);
-            setIsOpen(results.length > 0 || loading);
-            setLoading(false);
-            
-            // If only one result is found, add it to the cart automatically
-            if (results.length === 1) {
-                addToDemandeCart(results[0]);
-                setSearchTerm('');
-                setIsOpen(false);
-            }
-        }, 300), // 300ms delay
-        [products, addToDemandeCart]
-    );
-
-    const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const value = event.target.value;
-        setSearchTerm(value);
-        debouncedSearch(value);
-    };
-
-    const handleSelectProduct = (selectedProduct: Product) => {
-        addToDemandeCart(selectedProduct);
-        setSearchTerm('');
-        setIsOpen(false);
-    };
-
-    const handleClearSearch = () => {
-        setSearchTerm('');
-        setSearchResults([]);
-        setIsOpen(false);
-    };
-
-    const handleFocus = () => {
-        setIsFocused(true);
-        if (searchTerm.trim() && searchResults.length > 0) {
-            setIsOpen(true);
-        }
-    };
-
-    const handleBlur = () => {
-        setIsFocused(false);
-    };
+    const {
+        // state
+        searchTerm,
+        searchResults,
+        loading,
+        isOpen,
+        isFocused,
+        // refs
+        containerRef,
+        // handlers
+        handleSearch,
+        handleSelectProduct,
+        handleClearSearch,
+        handleFocus,
+        handleBlur,
+    } = useDemandeProductSearch();
 
     return (
         <div className="relative w-full" ref={containerRef}>

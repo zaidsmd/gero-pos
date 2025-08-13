@@ -2,9 +2,11 @@ import React, { useEffect, useState } from "react";
 import { type Demande, useDemandesStore } from "../../stores/demandes-store";
 import DemandeCartLayout from "../../components/demandes/demande-cart-layout";
 import DemandeArticles from "../../components/demandes/demande-articles";
+import DemandeKeyboard from "../../components/keyboard/demande-keyboard";
 import MaDemande from "../../components/demandes/ma-demande";
 import DemandesExterne from "../../components/demandes/DemandesExterne";
-import {Link} from "react-router";
+import {Link, Navigate} from "react-router";
+import { useSettingsStore } from "../../stores/settings-store";
 
 const Demandes = () => {
     const {
@@ -17,11 +19,17 @@ const Demandes = () => {
         setShowCreateModal
     } = useDemandesStore();
     const [demandeIntern, setDemandeIntern] = useState<Demande>();
+    const { features,posType } = useSettingsStore();
 
     useEffect(() => {
         fetchDemandesIntern();
         fetchDemandesExtern();
     }, []);
+
+    if (!features.demandes) {
+        return <Navigate to="/pos" replace />;
+    }
+
     return (
         <div className="h-full w-full p-4 flex flex-col">
             <div className="flex justify-between items-center mb-6">
@@ -133,7 +141,8 @@ const Demandes = () => {
 
                             <div className="w-full md:w-1/3 overflow-hidden flex flex-col gap-4">
                                 <div className="bg-white rounded-lg shadow-sm w-full flex-grow flex flex-col overflow-hidden">
-                                    <DemandeArticles />
+                                    {posType === "classic" && <DemandeArticles/>}
+                                    {posType === "parfums" && <DemandeKeyboard/>}
                                 </div>
                             </div>
                         </div>
