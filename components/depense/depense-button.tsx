@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import DepenseModal from './depense-modal';
 import {toast} from "react-toastify";
+import {useSettingsStore} from "../../stores/settings-store";
 
 interface DepenseButtonProps {
   className?: string;
@@ -16,6 +17,10 @@ const DepenseButton: React.FC<DepenseButtonProps> = ({ className = '' }) => {
     // You can add additional logic here if needed
     toast.success(text)
   };
+
+  const { features} = useSettingsStore();
+
+  if(!features.depense) return null;
 
   return (
     <>

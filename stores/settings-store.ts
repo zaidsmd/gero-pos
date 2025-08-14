@@ -1,5 +1,28 @@
 import {create} from 'zustand';
 import {persist} from 'zustand/middleware';
+import {endpoints} from "../services/api";
+
+export interface SettingsApiResponse {
+    features: {
+        ticketPrinting: boolean;
+        autoTicketPrinting: boolean;
+        priceEditing: boolean;
+        reductionEnabled: boolean;
+        globalReductionEnabled: boolean;
+        demandes: boolean;
+    };
+    url: string;
+    apiUrl: string;
+    defaultClient: {value:number,label:string} | null;
+    rapports: {
+        stock:boolean;
+        saleByProductAndCLient:boolean;
+        productBySupplier:boolean;
+        paymentsAndCredit:boolean;
+        treasury:boolean;
+        daily:boolean;
+    }
+}
 
 interface SettingsState {
     features: {
@@ -9,6 +32,8 @@ interface SettingsState {
         reductionEnabled: boolean;
         globalReductionEnabled: boolean;
         demandes: boolean;
+        history:boolean;
+        depense:boolean;
     };
     
     posType: "parfums" | "classic"|"caisse";
@@ -22,77 +47,82 @@ interface SettingsState {
         daily:boolean;
     }
 
+    defaultClient: {value:number,label:string} | null;
+    url:string;
+    apiUrl:string;
+
     // Actions
     toggleFeature: (featureName: keyof SettingsState['features']) => void;
     setFeature: (featureName: keyof SettingsState['features'], value: boolean) => void;
+    fetchSettings: () => Promise<void>;
 }
 
 export const useSettingsStore = create<SettingsState>()(
-    persist(
-        (set) => ({
-            // Initial state
-            features: {
-                ticketPrinting: true,
-                autoTicketPrinting: true,
-                priceEditing: false,
-                reductionEnabled: true,
-                globalReductionEnabled: true,
-                demandes: true,
-            },
-            posType: "caisse",
-            rapports: {
-                stock:true,
-                saleByProductAndCLient:true,
-                productBySupplier:true,
-                paymentsAndCredit:true,
-                treasury:true,
-                daily:true,
-            },
+    (set) => ({
+        // Initial state
+        features: {
+            ticketPrinting: false,
+            autoTicketPrinting: false,
+            priceEditing: false,
+            reductionEnabled: false,
+            globalReductionEnabled: false,
+            demandes: false,
+            history:false,
+            depense:false,
+        },
+        posType: "caisse",
+        rapports: {
+            stock:false,
+            saleByProductAndCLient:false,
+            productBySupplier:false,
+            paymentsAndCredit:false,
+            treasury:false,
+            daily:false,
+        },
+        defaultClient: null,
+        apiUrl:"",
+        url:"",
 
-            // Toggle a feature flag
-            toggleFeature: (featureName) =>
+        // Toggle a feature flag
+        toggleFeature: (featureName) =>
+            set((state) => ({
+                features: {
+                    ...state.features,
+                    [featureName]: !state.features[featureName],
+                }
+            })),
+
+        // Set a feature flag to a specific value
+        setFeature: (featureName, value) =>
+            set((state) => ({
+                features: {
+                    ...state.features,
+                    [featureName]: value,
+                }
+            })),
+
+        fetchSettings: async () => {
+            try {
+                const resp = await endpoints.system.getSettings();
+                const data = (resp as any)?.data ?? resp;
+                if (!data) return;
                 set((state) => ({
                     features: {
                         ...state.features,
-                        [featureName]: !state.features[featureName],
-                    }
-                })),
-
-            // Set a feature flag to a specific value
-            setFeature: (featureName, value) =>
-                set((state) => ({
-                    features: {
-                        ...state.features,
-                        [featureName]: value,
-                    }
-                })),
-        }),
-        {
-            name: 'gero-pos-settings',
-            version: 2,
-            migrate: (persistedState: any, version: number) => {
-                const state = persistedState || {};
-                const features = state.features || {};
-                return {
-                    ...state,
-                    features: {
-                        ticketPrinting: features.ticketPrinting ?? true,
-                        autoTicketPrinting: features.autoTicketPrinting ?? true,
-                        priceEditing: features.priceEditing ?? true,
-                        reductionEnabled: features.reductionEnabled ?? true,
-                        globalReductionEnabled: features.globalReductionEnabled ?? true,
-                        demandes: features.demandes ?? true,
+                        ...(data.features ?? {}),
                     },
+                    defaultClient: data.defaultClient ?? state.defaultClient,
                     rapports: {
-                        stock:features.stock ?? true,
-                        saleByProductAndCLient:features.saleByProductAndCLient ?? true,
-                        productBySupplier:features.productBySupplier ?? true,
-                        paymentsAndCredit:features.paymentsAndCredit ?? true,
-                        treasury:features.treasury ?? true,
-                        daily:features.daily ?? true,
+                        ...(state.rapports ?? {}),
+                        ...(data.rapports ?? {}),
                     },
-                } as SettingsState;
+                    url: data.url ?? state.url,
+                    apiUrl: data.apiUrl ?? state.apiUrl,
+                    posType: data.posType ?? state.posType,
+                }));
+            } catch (e) {
+                console.warn('Failed to fetch settings:', e);
             }
         }
-    )
+    })
 );

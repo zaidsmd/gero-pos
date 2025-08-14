@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import HistoryPanel from './history-panel';
+import { useAuth } from '../auth/auth-provider';
 
 interface HistoryOffcanvasProps {
   isOpen: boolean;
@@ -7,7 +8,10 @@ interface HistoryOffcanvasProps {
   sessionId?: string | number;
 }
 
-const HistoryOffcanvas: React.FC<HistoryOffcanvasProps> = ({ isOpen, onClose, sessionId = '1' }) => {
+const HistoryOffcanvas: React.FC<HistoryOffcanvasProps> = ({ isOpen, onClose, sessionId }) => {
+  const { sessionId: authSessionId } = useAuth();
+  const effectiveSessionId = sessionId ?? authSessionId ?? undefined;
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -35,7 +39,7 @@ const HistoryOffcanvas: React.FC<HistoryOffcanvasProps> = ({ isOpen, onClose, se
           </button>
         </div>
         <div className="p-4 h-[calc(100%-56px)] overflow-hidden">
-          <HistoryPanel sessionId={sessionId} />
+          <HistoryPanel sessionId={effectiveSessionId} />
         </div>
       </div>
     </div>

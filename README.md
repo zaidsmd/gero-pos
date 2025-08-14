@@ -85,3 +85,36 @@ This template comes with [Tailwind CSS](https://tailwindcss.com/) already config
 ---
 
 Built with ❤️ using React Router.
+
+
+## Laravel Token Injection Authentication
+
+This app can be embedded inside a Laravel app without showing a login form. The Laravel app should open the root route of this SPA and pass the access token (and optional session ID) via query params. The root route will store the values, validate the token by calling the API, and then redirect.
+
+- Primary injection route: `/`
+- Supported query params:
+  - `token` or `access_token`: The Bearer token to store under `auth_token`.
+  - `session_id` or `sid` (optional): A numeric/string session identifier stored under `session_id`.
+
+Example:
+
+```
+/?token=YOUR_TOKEN&session_id=1
+```
+
+Behavior on `/`:
+- The app stores the token as `auth_token` and session id as `session_id` in `localStorage`.
+- It immediately validates by calling a lightweight API endpoint. If the token works:
+  - Redirects to `/pos` automatically.
+- If validation fails or no token is available:
+  - Clears any stored auth and redirects to a 404 error page.
+- The Axios instance in `services/api.ts` automatically adds on all requests:
+  - `Authorization: Bearer <auth_token>` header.
+  - `session_id` as a query parameter for GET or in the request body for POST.
+
+Optional legacy route:
+- You can still use `/auth/inject?token=...&session_id=...&redirect=/pos` which stores and then redirects, but `/` is now the recommended entry point.
+
+Notes:
+- Make sure your Laravel app generates and passes a valid API token.
+- To clear the session manually, remove `auth_token` and `session_id` from localStorage or implement a small logout utility.

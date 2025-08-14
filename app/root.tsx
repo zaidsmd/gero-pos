@@ -10,6 +10,8 @@ import {
 import type { Route } from "./+types/root";
 import "./app.css";
 import { ConnectionProvider } from "../components/connection/connection-provider";
+import { AuthProvider } from "../components/auth/auth-provider";
+import { SettingsProvider } from "../components/settings/settings-provider";
 import {ToastContainer} from "react-toastify";
 
 export const links: Route.LinksFunction = () => [
@@ -35,12 +37,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body>
-        <ConnectionProvider>
-          {children}
-        </ConnectionProvider>
+        <AuthProvider>
+          <SettingsProvider>
+            <ConnectionProvider>
+              {children}
+            </ConnectionProvider>
+          </SettingsProvider>
+        </AuthProvider>
         <ScrollRestoration />
         <Scripts />
-      <ToastContainer  />
+        <ToastContainer />
       </body>
     </html>
   );

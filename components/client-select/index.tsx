@@ -6,6 +6,7 @@ import { debounce } from 'lodash';
 import {type Client, usePOSStore} from '~/pos/pos-store';
 import QuickAddClientModal from './quick-add-client-modal';
 import {endpoints} from "../../services/api";
+import { useSettingsStore } from '../../stores/settings-store';
 
 const ClientSelect: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState<string>('');
@@ -18,6 +19,8 @@ const ClientSelect: React.FC = () => {
     
     // Use the POS store
     const { client, setClient, clearClient } = usePOSStore();
+    // Settings default client
+    const defaultClient = useSettingsStore((s) => s.defaultClient);
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -39,6 +42,15 @@ const ClientSelect: React.FC = () => {
             setSearchTerm(client.nom);
         }
     }, [client]);
+
+    // Initialize POS client from settings.defaultClient when available and no client is set
+    useEffect(() => {
+        if (!client && defaultClient && defaultClient.value && defaultClient.label) {
+            const mapped: Client = { id: defaultClient.value, nom: defaultClient.label };
+            setClient(mapped);
+            setSearchTerm(mapped.nom);
+        }
+    }, [client, defaultClient, setClient]);
 
     // Debounced search function
     const debouncedSearch = useCallback(

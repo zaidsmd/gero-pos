@@ -1,7 +1,8 @@
 import axios from 'axios';
+import type {SettingsApiResponse} from "../stores/settings-store";
 
 // Base URL for all API requests
-const API_BASE_URL = 'http://pdv.gero-pdv.test/api/v-classic';
+const API_BASE_URL = 'http://pdv.gero-pdv.test/api/pos/v1';
 
 // Create a configured Axios instance
 const api = axios.create({
@@ -16,8 +17,8 @@ const api = axios.create({
 // Request interceptor for adding auth token and session id
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('auth_token') || '28|uw1Yr6RgXu0ztAyLxOsA42oqRinZL5hHoCkGtzIZ30e9804f';
-    const sessionId = localStorage.getItem('session_id') || '1';
+    const token = localStorage.getItem('auth_token') || '';
+    const sessionId = localStorage.getItem('session_id') || '';
 
     // Attach token like before
     if (token) {
@@ -110,7 +111,8 @@ api.interceptors.response.use(
 const endpoints = {
   // System
   system: {
-    healthCheck: () => api.get('/articles-all'),
+    healthCheck: () => api.get('/'),
+    getSettings: ():Promise<SettingsApiResponse> => api.get('/settings'),
   },
 
   // Payment

@@ -6,7 +6,7 @@ import DemandeKeyboard from "../../components/keyboard/demande-keyboard";
 import MaDemande from "../../components/demandes/ma-demande";
 import DemandesExterne from "../../components/demandes/DemandesExterne";
 import {Link, Navigate} from "react-router";
-import { useSettingsStore } from "../../stores/settings-store";
+import {useSettingsStore} from "../../stores/settings-store";
 
 const Demandes = () => {
     const {

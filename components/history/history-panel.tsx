@@ -1,6 +1,7 @@
 import React, {useEffect, useMemo, useState} from 'react';
 import {endpoints} from '../../services/api';
 import {formatNumber} from "../../utils/formats";
+import { useAuth } from '../auth/auth-provider';
 
 // Print a block of HTML without opening a new window by using a hidden iframe
 const printHtmlInHiddenIframe = async (html: string): Promise<void> => {
@@ -322,7 +323,10 @@ const EmptyState: React.FC<{ text: string }> = ({text}) => (
     <div className="text-center text-gray-500 py-6 text-sm">{text}</div>
 );
 
-const HistoryPanel: React.FC<{ sessionId?: string | number }> = ({sessionId = '1'}) => {
+const HistoryPanel: React.FC<{ sessionId?: string | number }> = ({sessionId}) => {
+    const { sessionId: authSessionId } = useAuth();
+    const effectiveSessionId = sessionId ?? authSessionId ?? undefined;
+
     const [activeTab, setActiveTab] = useState<TabKey>('ventes');
     const [data, setData] = useState<HistoryResponse>({depenses: [], ventes: [], retours: []});
     const [loading, setLoading] = useState(false);
@@ -335,7 +339,11 @@ const HistoryPanel: React.FC<{ sessionId?: string | number }> = ({sessionId = '1
         setLoading(true);
         setError(null);
         try {
-            const res = await endpoints.history.getSessionHistory(sessionId);
+            if (!effectiveSessionId) {
+                setData({depenses: [], ventes: [], retours: []});
+                return;
+            }
+            const res = await endpoints.history.getSessionHistory(effectiveSessionId);
             setData(res.data as HistoryResponse);
         } catch (e: any) {
             setError('Impossible de charger l\'historique');
@@ -347,7 +355,7 @@ const HistoryPanel: React.FC<{ sessionId?: string | number }> = ({sessionId = '1
     useEffect(() => {
         load();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [sessionId]);
+    }, [effectiveSessionId]);
 
     const tabCounts = useMemo(() => ({
         ventes: data.ventes?.length ?? 0,

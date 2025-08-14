@@ -463,7 +463,6 @@ export const usePOSStore = create<POSState>((set, get) => ({
                 // Global reduction applied to the whole order (always pourcentage)
                 global_reduction: grValue,
                 exercice: 2025,
-                session_id:"1",
             };
 
             // Use the cartTotal property from the store
@@ -522,7 +521,6 @@ export const usePOSStore = create<POSState>((set, get) => ({
                     i_reference: paymentData.checkReference ?? null,
                     i_date: paymentData.expectedDate ?? null,
                 },
-                session_id: "1",
             };
 
             
