@@ -39,7 +39,7 @@ export const useSettingsStore = create<SettingsState>()(
                 globalReductionEnabled: true,
                 demandes: true,
             },
-            posType: "parfums",
+            posType: "caisse",
             rapports: {
                 stock:true,
                 saleByProductAndCLient:true,

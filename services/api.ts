@@ -16,7 +16,7 @@ const api = axios.create({
 // Request interceptor for adding auth token and session id
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('auth_token') || '27|fyBJtGVckznjvNSLNXi5o7cOs7VQ099gQdOxCc8U8e8517c9';
+    const token = localStorage.getItem('auth_token') || '28|uw1Yr6RgXu0ztAyLxOsA42oqRinZL5hHoCkGtzIZ30e9804f';
     const sessionId = localStorage.getItem('session_id') || '1';
 
     // Attach token like before

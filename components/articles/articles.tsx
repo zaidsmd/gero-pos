@@ -1,6 +1,5 @@
 import React, {useEffect, useRef, useCallback} from 'react';
 import {usePOSStore} from "~/pos/pos-store";
-import {formatNumber} from "../../utils/formats";
 import ProductCard from "./card";
 
 const Articles = () => {

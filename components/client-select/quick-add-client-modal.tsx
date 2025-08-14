@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import axios from 'axios';
 import { type Client, usePOSStore } from '~/pos/pos-store';
 import {endpoints} from "../../services/api";
 

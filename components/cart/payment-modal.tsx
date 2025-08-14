@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { endpoints } from '../../services/api';
-import { usePOSStore } from '../../app/pos/pos-store';
+import { usePOSStore } from '~/pos/pos-store';
 import { formatNumber } from '../../utils/formats';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 
@@ -119,8 +119,11 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                 endpoints.payment.getAccounts(),
                 endpoints.payment.getPaymentMethods()
             ]);
-            setAccounts(accountsResponse.data);
-            setPaymentMethods(paymentMethodsResponse.data);
+            const accountsData = accountsResponse.data as Account[];
+            const methodsData = paymentMethodsResponse.data as PaymentMethod[];
+            setAccounts(accountsData);
+            setPaymentMethods(methodsData);
+
         } catch (err) {
             console.error('Error fetching payment data:', err);
             setGeneralError('Erreur lors du chargement des données de paiement');

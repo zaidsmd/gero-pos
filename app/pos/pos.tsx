@@ -7,6 +7,7 @@ import { HistoryOffcanvas } from "../../components/history";
 import {Link} from "react-router";
 import { useSettingsStore } from "../../stores/settings-store";
 import Keyboard from "../../components/keyboard";
+import CaissePanel from "../../components/pos/caisse-panel";
 
 export function POS() {
   const [isHistoryOpen, setHistoryOpen] = useState(false);
@@ -51,10 +52,11 @@ export function POS() {
           <div className="bg-white rounded-lg shadow-sm p-4 w-full flex-none max-h-fit ">
             <TypeToggler/>
           </div>
-          <div className="bg-white rounded-lg shadow-sm p-4 w-full flex-grow  flex flex-col overflow-hidden">
+          <div className={`bg-white rounded-lg shadow-sm p-4 w-full flex-grow  flex flex-col overflow-hidden ${posType === "caisse" ? "hidden" : ""}`}>
             {posType === "classic" && <Articles/>}
             {posType === "parfums" && <Keyboard/>}
           </div>
+            {posType === "caisse" && <CaissePanel/>}
         </div>
 
       </div>

@@ -1,8 +1,10 @@
-import React, {useEffect} from 'react';
+import React, {type RefObject, useEffect, useRef} from 'react';
 import { type Product } from '~/pos/pos-store';
 import useProductSearch from './useProductSearch';
 
 const ProductSearch: React.FC = () => {
+
+    const inputRef:RefObject<HTMLInputElement|null> = useRef(null);
     const {
         // state
         searchTerm,
@@ -19,8 +21,37 @@ const ProductSearch: React.FC = () => {
         handleFocus,
         handleBlur,
     } = useProductSearch();
+    useEffect(() => {
+        const SCANNER_PREFIX_KEY = 'F9';
+        let buffer = '';
+        let lastKeyTime = Date.now();
 
+        const handleKeyDown = (e: KeyboardEvent) => {
+            const now = Date.now();
 
+            // Prefix detection
+            if (e.key === SCANNER_PREFIX_KEY) {
+                inputRef.current?.focus();
+                buffer = '';
+                return;
+            }
+
+            // Fast typing detection
+            const timeDiff = now - lastKeyTime;
+            lastKeyTime = now;
+
+            if (timeDiff > 100) {
+                buffer = '';
+            }
+
+            buffer += e.key;
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, []);
     return (
         <div className="relative w-full" ref={containerRef}>
             <div className={`flex space-x-2 mb-2 rounded-md overflow-hidden border ${isFocused ? 'border-primary ring-2 ring-blue-100' : 'border-gray-300'} `}>
@@ -33,6 +64,7 @@ const ProductSearch: React.FC = () => {
                         onChange={handleSearch}
                         onFocus={handleFocus}
                         onBlur={handleBlur}
+                        ref={inputRef}
                     />
                     <div className="absolute right-0 flex items-center pr-2 h-full">
                         {searchTerm && (

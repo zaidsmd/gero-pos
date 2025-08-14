@@ -1,4 +1,3 @@
-import type { MetaFunction } from "react-router";
 
 export namespace Route {
   // @ts-ignore
